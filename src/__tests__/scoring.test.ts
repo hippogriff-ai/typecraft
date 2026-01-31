@@ -5,6 +5,7 @@ import {
   recordKeyPress,
   computeWeaknessScore,
   rankWeaknesses,
+  computeTrend,
 } from '../lib/scoring'
 
 describe('KEY_GROUPS', () => {
@@ -132,5 +133,48 @@ describe('rankWeaknesses', () => {
     const ranked = rankWeaknesses([good, bad, mid], 1)
     expect(ranked).toHaveLength(1)
     expect(ranked[0].key).toBe('(')
+  })
+})
+
+describe('computeTrend', () => {
+  /**
+   * Spec: "Trend: direction and magnitude derived from linear regression on the last 10 data points per key.
+   * Displayed as: improving (green arrow up), declining (red arrow down), or stable (grey dash)"
+   */
+  it('returns stable for profile with fewer than 3 data points', () => {
+    let profile = createKeyProfile('a')
+    profile = recordKeyPress(profile, { correct: true, timeMs: 200 })
+    expect(computeTrend(profile)).toBe('stable')
+  })
+
+  it('returns improving when accuracy increases over last 10 presses', () => {
+    let profile = createKeyProfile('a')
+    // First 5 mostly misses, last 5 mostly hits → improving
+    for (let i = 0; i < 5; i++) profile = recordKeyPress(profile, { correct: false, timeMs: 500 })
+    for (let i = 0; i < 5; i++) profile = recordKeyPress(profile, { correct: true, timeMs: 200 })
+    expect(computeTrend(profile)).toBe('improving')
+  })
+
+  it('returns declining when accuracy decreases over last 10 presses', () => {
+    let profile = createKeyProfile('a')
+    // First 5 mostly hits, last 5 mostly misses → declining
+    for (let i = 0; i < 5; i++) profile = recordKeyPress(profile, { correct: true, timeMs: 200 })
+    for (let i = 0; i < 5; i++) profile = recordKeyPress(profile, { correct: false, timeMs: 500 })
+    expect(computeTrend(profile)).toBe('declining')
+  })
+
+  it('returns stable when accuracy is consistent', () => {
+    let profile = createKeyProfile('a')
+    // All hits → flat line → stable
+    for (let i = 0; i < 10; i++) profile = recordKeyPress(profile, { correct: true, timeMs: 200 })
+    expect(computeTrend(profile)).toBe('stable')
+  })
+
+  it('only considers last 10 data points', () => {
+    let profile = createKeyProfile('a')
+    // 20 misses followed by 10 hits — trend should look at last 10 (all hits) → stable
+    for (let i = 0; i < 20; i++) profile = recordKeyPress(profile, { correct: false, timeMs: 500 })
+    for (let i = 0; i < 10; i++) profile = recordKeyPress(profile, { correct: true, timeMs: 200 })
+    expect(computeTrend(profile)).toBe('stable')
   })
 })

@@ -51,6 +51,39 @@ export function computeWeaknessScore(
   return (1 - accuracy) * 0.7 + normalizedSlowness * 0.3
 }
 
+export type Trend = 'improving' | 'declining' | 'stable'
+
+/**
+ * Compute trend direction from the last 10 data points using linear regression.
+ * Spec: "direction and magnitude derived from linear regression on the last 10 data points per key"
+ * Returns 'improving' if slope > threshold, 'declining' if slope < -threshold, 'stable' otherwise.
+ */
+export function computeTrend(profile: KeyProfile): Trend {
+  const recent = profile.history.slice(-10)
+  if (recent.length < 3) return 'stable'
+
+  // y values: 1 for correct, 0 for miss
+  const n = recent.length
+  let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0
+  for (let i = 0; i < n; i++) {
+    const y = recent[i].correct ? 1 : 0
+    sumX += i
+    sumY += y
+    sumXY += i * y
+    sumX2 += i * i
+  }
+
+  const denom = n * sumX2 - sumX * sumX
+  if (denom === 0) return 'stable'
+
+  const slope = (n * sumXY - sumX * sumY) / denom
+
+  // Threshold: ~5% change per data point is meaningful
+  if (slope > 0.05) return 'improving'
+  if (slope < -0.05) return 'declining'
+  return 'stable'
+}
+
 export function rankWeaknesses(
   profiles: KeyProfile[],
   limit?: number,

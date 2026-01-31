@@ -7,6 +7,7 @@ import { createAccuracyRing, recordHit, recordMiss } from './lib/accuracy-ring'
 import type { AccuracyRing } from './lib/accuracy-ring'
 import { SPEED_PRESETS } from './lib/settings'
 import { calculateWPM } from './lib/stats'
+import { computeTrend } from './lib/scoring'
 import { getCharColor } from './lib/sprites'
 import type { Settings } from './lib/settings'
 import { GameBoard } from './components/GameBoard'
@@ -264,7 +265,7 @@ function App() {
     totalKills: p.correctAttempts,
     bestAccuracy: p.totalAttempts > 0 ? p.correctAttempts / p.totalAttempts : 0,
     bestSpeedMs: Math.round(p.averageTimeMs),
-    trend: 'stable' as const,
+    trend: computeTrend(p),
   }))
 
   // Screen routing

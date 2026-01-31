@@ -47,6 +47,20 @@ describe('useGameState', () => {
     expect(result.current.focusKeys).toBeDefined()
   })
 
+  it('updateSettings persists changes to localStorage', () => {
+    const { result } = renderHook(() => useGameState())
+    expect(result.current.settings.speedPreset).toBe('normal')
+
+    act(() => {
+      result.current.updateSettings({ ...result.current.settings, speedPreset: 'fast' })
+    })
+
+    expect(result.current.settings.speedPreset).toBe('fast')
+
+    const stored = JSON.parse(localStorage.getItem('typecraft')!)
+    expect(stored.settings.speedPreset).toBe('fast')
+  })
+
   it('recalibrate resets to calibration mode', () => {
     localStorage.setItem(
       'typecraft',

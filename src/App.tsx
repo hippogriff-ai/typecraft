@@ -165,7 +165,7 @@ function App() {
         return (
           <SettingsScreen
             settings={settings}
-            onUpdate={() => {}}
+            onUpdate={gameState.updateSettings}
             onBack={gameState.goToMenu}
           />
         )

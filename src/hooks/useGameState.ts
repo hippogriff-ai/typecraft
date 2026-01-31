@@ -22,6 +22,7 @@ export interface GameState {
   roundHistory: AppState['roundHistory']
   calibrationProgress: AppState['calibrationProgress']
   settings: NonNullable<AppState['settings']>
+  updateSettings: (settings: NonNullable<AppState['settings']>) => void
   startGame: () => void
   completeDemo: () => void
   completeRound: (stats: { grapesLeft: number; accuracy: number; avgReactionMs: number }) => void
@@ -90,6 +91,13 @@ export function useGameState(): GameState {
     setAppState(state)
     saveState(state)
   }, [])
+
+  const updateSettings = useCallback(
+    (newSettings: NonNullable<AppState['settings']>) => {
+      persist({ ...appState, settings: newSettings })
+    },
+    [appState, persist],
+  )
 
   const startGame = useCallback(() => {
     if (appState.calibrationProgress.complete) {
@@ -186,6 +194,7 @@ export function useGameState(): GameState {
     roundHistory: appState.roundHistory,
     calibrationProgress: appState.calibrationProgress,
     settings,
+    updateSettings,
     startGame,
     completeDemo,
     completeRound,

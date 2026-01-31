@@ -56,6 +56,23 @@ describe('clearCalibrationData', () => {
     expect(loaded!.roundHistory).toHaveLength(1)
   })
 
+  /**
+   * Spec: "Recalibration Keeps: high score, total kills, round history"
+   */
+  it('preserves high score on recalibration', () => {
+    const state = makeState({
+      mode: 'practice',
+      highScore: 99,
+      calibrationProgress: { completedGroups: ['homeRow'], complete: true },
+    })
+    saveState(state)
+
+    clearCalibrationData()
+
+    const loaded = loadState()
+    expect(loaded!.highScore).toBe(99)
+  })
+
   it('does nothing when no state exists', () => {
     expect(() => clearCalibrationData()).not.toThrow()
   })

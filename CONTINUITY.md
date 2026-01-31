@@ -21,7 +21,7 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - Invaders colored by char type (letters=blue/green, symbols=red/orange, numbers=purple)
 - Explosion system: Explosion[] state in App.tsx, passed to GameBoard, 8 CSS-animated particles per explosion, 300ms duration
 - bestSpeedMs uses 0 sentinel (not Infinity) to survive JSON serialization
-- OnboardingDemo uses rAF animation loop with queueMicrotask for proximity state update (avoids lint errors with setState-in-effect and ref-during-render)
+- OnboardingDemo uses rAF animation loop with queueMicrotask for proximity state update
 
 ## State
 ### Done
@@ -61,17 +61,21 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - **Keys improved/declined (iteration 12)**: round-start accuracy snapshot compared to round-end, passed to RoundSummary
 - **Stats screen color-coding (iteration 13)**: rows tinted red-to-green based on accuracy weakness
 - **Onboarding demo overhaul (iteration 14)**: spatial invaders with rAF movement, proximity-triggered "Watch out!" prompt
-- **Adaptive calibration wired (iteration 15)**: CalibrationTracker now used in useGameLoop during calibration mode, adjusts speed dynamically
+- **Adaptive calibration wired (iteration 15)**: CalibrationTracker now used in useGameLoop during calibration mode
 - **Calibration summary enhanced (iteration 16)**: shows overall accuracy, strongest keys, and weakest keys
 - **Storage wipe on parse error (iteration 17)**: corrupted localStorage now explicitly removed per spec
-- **176 unit tests, 13 E2E tests, build clean, lint clean**
+- **Dead code cleanup (iteration 18)**: removed unused RoundRecord and KeyGroupName types
+- **Recalibrate confirmation dialog (iteration 19)**: MainMenu shows confirm/cancel before recalibrating
+- **New high score display (iteration 19)**: RoundSummary shows "NEW HIGH SCORE" when applicable
+- **Grape spring animation (iteration 20)**: grapes animate with spring easing when cluster reflows after loss
+- **179 unit tests, 13 E2E tests, build clean, lint clean**
 
 ### Now
-- Continuing Ralph Loop iterations
+- Spec compliance achieved — all major spec items implemented
 
 ### Next
-- Additional gameplay tuning and polish
-- Dead code cleanup pass
+- Additional visual polish (color-blind modes per spec)
+- E2E test updates for new features
 
 ## Open Questions
 - None

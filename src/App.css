@@ -234,10 +234,7 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  font-size: 28px;
-  font-weight: 700;
   color: #fff;
-  text-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
   border-radius: 4px;
   transform: translate(-50%, -50%);
   position: relative;
@@ -246,6 +243,11 @@
 .invader-char {
   position: relative;
   z-index: 2;
+  font-size: 22px;
+  font-weight: 900;
+  font-family: monospace;
+  text-shadow: 0 0 4px #000, 0 0 8px currentColor;
+  line-height: 1;
 }
 
 /* Round Summary */

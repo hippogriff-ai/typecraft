@@ -52,7 +52,7 @@ function App() {
 
   const handleRoundEnd = useCallback(
     (state: RoundState) => {
-      const totalChars = state.invaders.length
+      const totalChars = state.totalSpawned
       const kills = state.score
       const accuracy = totalChars > 0 ? kills / totalChars : 0
 

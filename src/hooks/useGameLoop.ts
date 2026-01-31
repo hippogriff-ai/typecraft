@@ -63,6 +63,7 @@ export function useGameLoop(props: UseGameLoopProps) {
 
       const allResolved = state.invaders.every((inv) => !inv.alive)
       if (allResolved && state.currentWave < state.totalWaves) {
+        state = { ...state, invaders: [] }
         state = spawnWave(state, {
           center,
           boardWidth: boardSize.width,

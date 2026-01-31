@@ -24,6 +24,7 @@ export interface RoundState {
   roundOver: boolean
   roundResult?: 'cleared' | 'grapes_lost'
   score: number
+  totalSpawned: number
   maxInvadersPerWave: number
 }
 
@@ -75,6 +76,7 @@ export function createRoundState(opts: {
     focusKeys: opts.focusKeys,
     roundOver: false,
     score: 0,
+    totalSpawned: 0,
     maxInvadersPerWave: opts.maxInvadersPerWave ?? 12,
   }
 }
@@ -146,6 +148,7 @@ export function spawnWave(
     ...state,
     invaders: [...state.invaders, ...newInvaders],
     currentWave: nextWave,
+    totalSpawned: state.totalSpawned + newInvaders.length,
   }
 }
 

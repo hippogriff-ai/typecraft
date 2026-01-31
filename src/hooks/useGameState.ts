@@ -186,8 +186,9 @@ export function useGameState(): GameState {
           setScreen('playing')
         }
       } else {
+        // In practice mode, persist state but keep screen as 'playing' — App.tsx
+        // manages the round summary overlay and countdown transitions itself.
         persist({ ...appState, roundHistory: newHistory, highScore: newHighScore })
-        setScreen('round-summary')
       }
     },
     [appState, mode, calibrationRoundIndex, calibrationRounds, persist],

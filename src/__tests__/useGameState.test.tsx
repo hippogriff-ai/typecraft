@@ -157,6 +157,38 @@ describe('useGameState — navigation', () => {
   })
 })
 
+describe('useGameState — practice round loop', () => {
+  /**
+   * In practice mode, completeRound should NOT change the screen away from 'playing'.
+   * App.tsx manages round summary overlays and countdown transitions.
+   */
+  it('completeRound in practice mode keeps screen as playing', () => {
+    localStorage.setItem(
+      'typecraft',
+      JSON.stringify({
+        schemaVersion: 1,
+        keyProfiles: {},
+        roundHistory: [],
+        calibrationProgress: {
+          completedGroups: ['homeRow', 'topRow', 'bottomRow', 'numbers', 'pythonSymbols'],
+          complete: true,
+        },
+        currentFocusKeys: ['(', ')'],
+        mode: 'practice',
+        highScore: 0,
+      }),
+    )
+    const { result } = renderHook(() => useGameState())
+    act(() => { result.current.startGame() })
+    expect(result.current.screen).toBe('playing')
+
+    act(() => {
+      result.current.completeRound({ grapesLeft: 20, accuracy: 0.8, avgReactionMs: 300, roundScore: 10, wpm: 30 })
+    })
+    expect(result.current.screen).toBe('playing')
+  })
+})
+
 describe('useGameState — recalibrate', () => {
   /**
    * Recalibrate resets to calibration mode but preserves high score.

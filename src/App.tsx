@@ -300,12 +300,21 @@ function App() {
     switch (gameState.screen) {
       case 'menu':
         return (
-          <MainMenu
-            onStartGame={gameState.startGame}
-            onStats={gameState.goToStats}
-            onSettings={gameState.goToSettings}
-            onRecalibrate={gameState.recalibrate}
-          />
+          <>
+            {gameState.dataWasWiped && (
+              <div data-testid="data-wiped-notice" style={{
+                textAlign: 'center', padding: '0.5rem', background: '#4a3a00', color: '#ffd700', fontSize: '0.9rem',
+              }}>
+                Data format updated. Starting fresh calibration.
+              </div>
+            )}
+            <MainMenu
+              onStartGame={gameState.startGame}
+              onStats={gameState.goToStats}
+              onSettings={gameState.goToSettings}
+              onRecalibrate={gameState.recalibrate}
+            />
+          </>
         )
 
       case 'demo':

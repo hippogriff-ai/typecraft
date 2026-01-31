@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { saveState, loadState, clearCalibrationData, type AppState } from '../lib/storage'
+import { saveState, loadState, clearCalibrationData, wasDataWiped, type AppState } from '../lib/storage'
 import { createKeyProfile } from '../lib/scoring'
 
 beforeEach(() => {
@@ -37,6 +37,37 @@ describe('saveState / loadState', () => {
     localStorage.setItem('typecraft', 'not json{{{')
     expect(loadState()).toBeNull()
     expect(localStorage.getItem('typecraft')).toBeNull()
+  })
+})
+
+describe('wasDataWiped', () => {
+  /**
+   * Spec: "Show a brief notice to the player: 'Data format updated. Starting fresh calibration.'"
+   * wasDataWiped() returns true after a schema mismatch wipe, false otherwise.
+   */
+  it('returns true after schema version mismatch wipe', () => {
+    const state = makeState()
+    saveState(state)
+    const raw = JSON.parse(localStorage.getItem('typecraft')!)
+    raw.schemaVersion = -1
+    localStorage.setItem('typecraft', JSON.stringify(raw))
+    loadState() // triggers wipe
+    expect(wasDataWiped()).toBe(true)
+  })
+
+  it('returns false when no wipe occurred', () => {
+    expect(wasDataWiped()).toBe(false)
+  })
+
+  it('returns false after data was wiped and flag consumed', () => {
+    const state = makeState()
+    saveState(state)
+    const raw = JSON.parse(localStorage.getItem('typecraft')!)
+    raw.schemaVersion = -1
+    localStorage.setItem('typecraft', JSON.stringify(raw))
+    loadState()
+    wasDataWiped() // consume
+    expect(wasDataWiped()).toBe(false) // second call returns false
   })
 })
 

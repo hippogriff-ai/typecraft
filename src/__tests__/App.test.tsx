@@ -79,6 +79,23 @@ describe('App — returning player', () => {
   })
 })
 
+/**
+ * Spec: "On version mismatch or JSON parse error: wipe all data and restart calibration.
+ * Show a brief notice to the player: 'Data format updated. Starting fresh calibration.'"
+ */
+describe('App — schema wipe notice', () => {
+  it('shows data wipe notice when schema version mismatches', () => {
+    localStorage.setItem('typecraft', JSON.stringify({ schemaVersion: -1, keyProfiles: {} }))
+    render(<App />)
+    expect(screen.getByTestId('data-wiped-notice')).toHaveTextContent('Data format updated')
+  })
+
+  it('does not show notice on normal first launch', () => {
+    render(<App />)
+    expect(screen.queryByTestId('data-wiped-notice')).not.toBeInTheDocument()
+  })
+})
+
 describe('App — navigation', () => {
   it('can navigate to stats and back', async () => {
     const user = userEvent.setup()

@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import { loadState, saveState, clearCalibrationData } from '../lib/storage'
+import { loadState, saveState, clearCalibrationData, wasDataWiped } from '../lib/storage'
 import type { AppState } from '../lib/storage'
 import { rankWeaknesses, createKeyProfile, recordKeyPress } from '../lib/scoring'
 import type { KeyProfile } from '../lib/scoring'
@@ -22,6 +22,7 @@ export interface GameState {
   roundHistory: AppState['roundHistory']
   calibrationProgress: AppState['calibrationProgress']
   settings: NonNullable<AppState['settings']>
+  dataWasWiped: boolean
   updateSettings: (settings: NonNullable<AppState['settings']>) => void
   recordKeyResult: (key: string, hit: boolean, reactionTimeMs: number) => void
   startGame: () => void
@@ -57,6 +58,7 @@ export function useGameState(): GameState {
   })
   const [screen, setScreen] = useState<Screen>('menu')
   const [isFirstLaunch] = useState(() => loadState() === null)
+  const [dataWasWiped] = useState(() => wasDataWiped())
   const [calibrationRounds] = useState(() => getCalibrationRounds())
   const [calibrationRoundIndex, setCalibrationRoundIndex] = useState(0)
 
@@ -224,6 +226,7 @@ export function useGameState(): GameState {
     roundHistory: appState.roundHistory,
     calibrationProgress: appState.calibrationProgress,
     settings,
+    dataWasWiped,
     updateSettings,
     recordKeyResult,
     startGame,

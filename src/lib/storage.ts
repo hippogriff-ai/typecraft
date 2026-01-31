@@ -3,6 +3,8 @@ import type { KeyProfile } from './scoring'
 const STORAGE_KEY = 'typecraft'
 const SCHEMA_VERSION = 1
 
+let dataWiped = false
+
 export interface RoundHistoryEntry {
   timestamp: number
   wpm: number
@@ -51,6 +53,7 @@ export function loadState(): AppState | null {
 
     if (data.schemaVersion !== undefined && data.schemaVersion !== SCHEMA_VERSION) {
       localStorage.removeItem(STORAGE_KEY)
+      dataWiped = true
       return null
     }
 
@@ -61,6 +64,12 @@ export function loadState(): AppState | null {
     localStorage.removeItem(STORAGE_KEY)
     return null
   }
+}
+
+export function wasDataWiped(): boolean {
+  const result = dataWiped
+  dataWiped = false
+  return result
 }
 
 export function clearCalibrationData(): void {

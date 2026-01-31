@@ -219,16 +219,6 @@
   transform: translate(-50%, -50%);
 }
 
-/* Round Info */
-.round-info {
-  position: absolute;
-  bottom: 0.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.8rem;
-  color: #8080a0;
-}
-
 /* Round Summary */
 .round-summary {
   display: flex;

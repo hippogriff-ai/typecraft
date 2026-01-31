@@ -51,12 +51,6 @@ describe('GameBoard', () => {
     expect(screen.queryByTestId('invader-0')).not.toBeInTheDocument()
   })
 
-  it('displays round progress info', () => {
-    const state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['(', ')'] })
-    render(<GameBoard roundState={state} onKeyPress={vi.fn()} />)
-    expect(screen.getByTestId('round-info')).toBeInTheDocument()
-  })
-
   /**
    * Verifies the accuracy ring is rendered around the grape cluster.
    * Spec: "circular progress ring surrounding the grape cluster"

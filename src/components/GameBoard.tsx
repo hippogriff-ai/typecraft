@@ -173,10 +173,6 @@ export function GameBoard({ roundState, accuracyRing, boardSize, explosions, abs
         </div>
       ))}
 
-      <div data-testid="round-info" className="round-info">
-        Wave {roundState.currentWave}/{roundState.totalWaves} | Grapes:{' '}
-        {roundState.grapes}/{roundState.maxGrapes}
-      </div>
     </div>
   )
 }

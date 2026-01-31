@@ -17,6 +17,7 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - Wave generator and game engine use deterministic 70/30 split (pre-allocated counts) to avoid flaky tests
 - StatsScreen defaults to sorting by key (not accuracy) so clicking Accuracy header sorts ascending first
 - spawnWave uses selectWordsForFocus to pick words/code-snippets, then expands to character invaders with batch positioning
+- Dead invaders pruned between waves; totalSpawned counter for accurate accuracy
 
 ## State
 ### Done
@@ -25,21 +26,23 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - **All 11 lib modules implemented**: keys, scoring, game-engine, wave-generator, stats, storage, settings, adaptive-calibration, accuracy-ring, sprites, word-list
 - **Both hooks implemented**: useGameState, useGameLoop
 - **All 10 components implemented**: HUD, GameBoard, RoundSummary, MainMenu, RoundEnd, Countdown, SettingsScreen, StatsScreen, OnboardingDemo, PauseMenu
-- **App.tsx fully wired** — menu → demo → calibration-summary → playing (with pause, round-end, round-summary)
+- **App.tsx fully wired** — menu → demo → calibration → playing (with pause, round-end, round-summary)
 - **Dark theme CSS** — App.css and index.css fully styled
 - **Settings persistence** — updateSettings in useGameState, wired to SettingsScreen
 - **Word-based batch spawning** — spawnWave uses selectWordsForFocus, characters from same word spawn near each other
-- **Key profile tracking** — recordKeyResult in useGameState captures hit/miss/reaction time from gameplay, enables adaptive weakness detection
-- **146/146 tests pass across 22 test files, build passes clean**
+- **Key profile tracking** — recordKeyResult captures hit/miss/reaction time from gameplay
+- **Calibration flow fixed** — focus keys correctly set from calibration round configs through all transitions
+- **Dead invader cleanup** — pruned between waves, totalSpawned for accurate accuracy
 - **Playtested in browser** — full flow works: menu → demo → calibration → gameplay with HUD, grape cluster, invaders
+- **146/146 tests pass across 22 test files, build passes clean**
 
 ### Now
-- Iteration complete. Ready for next iteration.
+- Iteration 4: Next task
 
 ### Next
-- Calibration focus keys: ensure calibration rounds set the correct group-specific focus keys
-- Visual polish (pixel-art sprites on invaders, animations, accuracy ring visual)
+- Visual polish (invader color by char type, animations, accuracy ring visual)
 - E2E testing with Playwright
+- High score tracking and display
 
 ## Open Questions
 - None

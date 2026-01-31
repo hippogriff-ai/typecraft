@@ -7,7 +7,7 @@ import { calculateLearningSpeed } from '../lib/stats'
 import type { SessionRecord } from '../lib/stats'
 import { getNextPracticeRound, getCalibrationRounds } from '../lib/wave-generator'
 
-export type Screen = 'menu' | 'demo' | 'playing' | 'calibration-summary' | 'round-summary' | 'stats' | 'settings'
+export type Screen = 'menu' | 'demo' | 'playing' | 'calibration-summary' | 'stats' | 'settings'
 export type GameMode = 'calibration' | 'practice'
 
 export interface GameState {

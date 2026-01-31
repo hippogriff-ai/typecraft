@@ -52,6 +52,15 @@ describe('GameBoard', () => {
   })
 
   /**
+   * Spec: "Grapes are connected by a thin stem/vine line (CSS) to give the cluster a natural bunch feel"
+   */
+  it('renders vine stem above grape cluster', () => {
+    const state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a'] })
+    render(<GameBoard roundState={state} onKeyPress={vi.fn()} />)
+    expect(screen.getByTestId('grape-vine')).toBeInTheDocument()
+  })
+
+  /**
    * Verifies the accuracy ring is rendered around the grape cluster.
    * Spec: "circular progress ring surrounding the grape cluster"
    */

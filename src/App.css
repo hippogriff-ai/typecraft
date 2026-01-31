@@ -110,6 +110,30 @@
   gap: 4px;
 }
 
+/* Vine stem line above grape cluster */
+.grape-vine {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 2px;
+  height: 30px;
+  background: linear-gradient(to bottom, #2d6b2f, #4a8f4c);
+  transform: translateX(-50%);
+  border-radius: 1px;
+}
+
+.grape-vine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -6px;
+  width: 12px;
+  height: 8px;
+  border: 2px solid #4a8f4c;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+}
+
 .grape {
   width: 18px;
   height: 18px;

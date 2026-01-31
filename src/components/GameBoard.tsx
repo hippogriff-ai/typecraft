@@ -57,6 +57,7 @@ export function GameBoard({ roundState, accuracyRing, boardSize, explosions, abs
       style={{ position: 'relative', width: '100%', height: '100%' }}
     >
       <div data-testid="grape-cluster" className="grape-cluster">
+        <div data-testid="grape-vine" className="grape-vine" />
         {accuracyRing && (
           <svg
             data-testid="accuracy-ring"

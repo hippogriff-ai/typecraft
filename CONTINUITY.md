@@ -40,16 +40,17 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - **Auto-timed round end**: auto-dismisses after 1.5s; 3-2-1 countdown between rounds
 - **Responsive board**: viewport-based sizing via resize listener, dynamic center
 - **Pause menu accuracy fix**: uses totalSpawned instead of invaders.length
-- **Lint clean, 152/152 tests pass, build clean**
-- **Playtested in browser**: full flow works end-to-end
+- **Comprehensive state transition tests**: 17 tests covering full game flow
+- **clearCalibrationData preserves highScore**: verified with test
+- **Lint clean, 161/161 tests pass, build clean**
+- **Playtested in browser**: full flow works end-to-end (menu→demo→calibration)
 
 ### Now
 - Ready for next iteration
 
 ### Next
-- E2E testing with Playwright
 - Visual polish (explosion animations, grape burst)
-- clearCalibrationData preserves roundHistory/highScore (verify)
+- E2E testing with Playwright
 
 ## Open Questions
 - None

@@ -50,8 +50,13 @@ describe('validateSettings', () => {
     expect(validateSettings(s).speedPreset).toBe('normal')
   })
 
+  it('rejects invalid colorBlindMode by falling back to none', () => {
+    const s = { ...DEFAULT_SETTINGS, colorBlindMode: 'invalid' as Settings['colorBlindMode'] }
+    expect(validateSettings(s).colorBlindMode).toBe('none')
+  })
+
   it('passes through valid values unchanged', () => {
-    const valid: Settings = { grapeCount: 30, speedPreset: 'fast', maxInvadersPerWave: 15, wavesPerRound: 10 }
+    const valid: Settings = { grapeCount: 30, speedPreset: 'fast', maxInvadersPerWave: 15, wavesPerRound: 10, colorBlindMode: 'deuteranopia' }
     expect(validateSettings(valid)).toEqual(valid)
   })
 })

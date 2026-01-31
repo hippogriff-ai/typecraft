@@ -1,8 +1,11 @@
+export type ColorBlindMode = 'none' | 'deuteranopia' | 'protanopia'
+
 export interface Settings {
   grapeCount: number
   speedPreset: 'slow' | 'normal' | 'fast'
   maxInvadersPerWave: number
   wavesPerRound: number
+  colorBlindMode: ColorBlindMode
 }
 
 export const SPEED_PRESETS: Record<Settings['speedPreset'], number> = {
@@ -16,6 +19,7 @@ export const DEFAULT_SETTINGS: Settings = {
   speedPreset: 'normal',
   maxInvadersPerWave: 12,
   wavesPerRound: 8,
+  colorBlindMode: 'none',
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -24,6 +28,7 @@ function clamp(value: number, min: number, max: number): number {
 
 export function validateSettings(settings: Settings): Settings {
   const validPresets: Settings['speedPreset'][] = ['slow', 'normal', 'fast']
+  const validCBModes: ColorBlindMode[] = ['none', 'deuteranopia', 'protanopia']
   return {
     grapeCount: clamp(settings.grapeCount, 6, 48),
     speedPreset: validPresets.includes(settings.speedPreset)
@@ -31,5 +36,8 @@ export function validateSettings(settings: Settings): Settings {
       : 'normal',
     maxInvadersPerWave: clamp(settings.maxInvadersPerWave, 6, 20),
     wavesPerRound: clamp(settings.wavesPerRound, 4, 12),
+    colorBlindMode: validCBModes.includes(settings.colorBlindMode)
+      ? settings.colorBlindMode
+      : 'none',
   }
 }

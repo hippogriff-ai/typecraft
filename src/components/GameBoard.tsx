@@ -1,6 +1,7 @@
 import type { RoundState, Vec2 } from '../lib/game-engine'
 import type { AccuracyRing } from '../lib/accuracy-ring'
 import { getCharColor, SPRITE_TEMPLATES } from '../lib/sprites'
+import type { ColorBlindMode } from '../lib/settings'
 import { SpriteRenderer } from './SpriteRenderer'
 
 export interface Explosion {
@@ -30,6 +31,7 @@ interface GameBoardProps {
   explosions?: Explosion[]
   absorbs?: AbsorbEffect[]
   grapeBursts?: GrapeBurst[]
+  colorBlindMode?: ColorBlindMode
   onKeyPress: (key: string) => void
 }
 
@@ -43,7 +45,7 @@ const PARTICLE_ANGLES = Array.from({ length: 8 }, (_, i) => (i * Math.PI * 2) / 
 // 6 juice droplets for grape burst, spread upward/outward
 const DROPLET_ANGLES = Array.from({ length: 6 }, (_, i) => -Math.PI / 2 + (i - 2.5) * 0.4)
 
-export function GameBoard({ roundState, accuracyRing, boardSize, explosions, absorbs, grapeBursts, onKeyPress }: GameBoardProps) {
+export function GameBoard({ roundState, accuracyRing, boardSize, explosions, absorbs, grapeBursts, colorBlindMode, onKeyPress }: GameBoardProps) {
   const w = boardSize?.width ?? 800
   const h = boardSize?.height ?? 600
   const center: Vec2 = { x: w / 2, y: h / 2 }
@@ -103,7 +105,7 @@ export function GameBoard({ roundState, accuracyRing, boardSize, explosions, abs
           const zIndex = Math.max(1, Math.round(maxDist - dist))
           const invaderIdx = roundState.invaders.indexOf(inv)
 
-          const charColor = getCharColor(inv.char)
+          const charColor = getCharColor(inv.char, colorBlindMode)
           const spriteTemplate = SPRITE_TEMPLATES[invaderIdx % SPRITE_TEMPLATES.length]
 
           return (

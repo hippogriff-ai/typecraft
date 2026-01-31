@@ -30,6 +30,7 @@ export interface AppState {
     speedPreset: string
     maxInvadersPerWave: number
     wavesPerRound: number
+    colorBlindMode?: string
   }
 }
 

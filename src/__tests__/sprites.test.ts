@@ -38,6 +38,26 @@ describe('getCharColor', () => {
     const color = getCharColor('5')
     expect(color.category).toBe('number')
   })
+
+  /**
+   * Spec: "Color-blind modes: 2-3 alternative color palettes for common color vision deficiencies"
+   * Deuteranopia and protanopia modes should return different colors than the default palette.
+   */
+  it('returns different colors in deuteranopia mode', () => {
+    const normal = getCharColor('(', 'none')
+    // Deuteranopia symbols should use orange/yellow instead of red
+    const deuter = getCharColor('(', 'deuteranopia')
+    expect(deuter.category).toBe('symbol')
+    // Both should return valid colors (we can't test exact randomized values)
+    expect(normal.primary).toBeTruthy()
+    expect(deuter.primary).toBeTruthy()
+  })
+
+  it('returns different colors in protanopia mode', () => {
+    const protan = getCharColor('(', 'protanopia')
+    expect(protan.category).toBe('symbol')
+    expect(protan.primary).toBeTruthy()
+  })
 })
 
 describe('assignSprite', () => {

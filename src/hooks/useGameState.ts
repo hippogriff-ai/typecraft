@@ -40,6 +40,7 @@ const DEFAULT_SETTINGS = {
   speedPreset: 'normal',
   maxInvadersPerWave: 12,
   wavesPerRound: 8,
+  colorBlindMode: 'none' as const,
 }
 
 function makeDefaultState(): AppState {

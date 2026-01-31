@@ -29,9 +29,14 @@ describe('saveState / loadState', () => {
     expect(loadState()).toBeNull()
   })
 
-  it('returns null for corrupted data', () => {
+  /**
+   * Spec: "On version mismatch or JSON parse error: wipe all data and restart calibration."
+   * Corrupted data should be removed from localStorage, not just ignored.
+   */
+  it('returns null and wipes storage for corrupted data', () => {
     localStorage.setItem('typecraft', 'not json{{{')
     expect(loadState()).toBeNull()
+    expect(localStorage.getItem('typecraft')).toBeNull()
   })
 })
 

@@ -58,6 +58,7 @@ export function loadState(): AppState | null {
     const { schemaVersion: _, ...state } = data
     return state
   } catch {
+    localStorage.removeItem(STORAGE_KEY)
     return null
   }
 }

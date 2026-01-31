@@ -78,6 +78,7 @@ function App() {
       grapesLeft: lastRoundStats.grapesLeft,
       accuracy: lastRoundStats.accuracy,
       avgReactionMs: lastRoundStats.avgReactionMs,
+      roundScore: lastRoundStats.roundScore,
     })
     setShowRoundSummary(false)
     startNewRound()

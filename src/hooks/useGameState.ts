@@ -26,7 +26,7 @@ export interface GameState {
   recordKeyResult: (key: string, hit: boolean, reactionTimeMs: number) => void
   startGame: () => void
   completeDemo: () => void
-  completeRound: (stats: { grapesLeft: number; accuracy: number; avgReactionMs: number }) => void
+  completeRound: (stats: { grapesLeft: number; accuracy: number; avgReactionMs: number; roundScore: number }) => void
   beginPractice: () => void
   recalibrate: () => void
   goToStats: () => void
@@ -138,7 +138,10 @@ export function useGameState(): GameState {
   }, [appState, persist, calibrationRounds, calibrationRoundIndex])
 
   const completeRound = useCallback(
-    (stats: { grapesLeft: number; accuracy: number; avgReactionMs: number }) => {
+    (stats: { grapesLeft: number; accuracy: number; avgReactionMs: number; roundScore: number }) => {
+      const currentHigh = appState.highScore ?? 0
+      const newHighScore = Math.max(currentHigh, stats.roundScore)
+
       const newHistory = [
         ...appState.roundHistory,
         {
@@ -164,6 +167,7 @@ export function useGameState(): GameState {
         const newState: AppState = {
           ...appState,
           roundHistory: newHistory,
+          highScore: newHighScore,
           calibrationProgress: {
             completedGroups,
             complete: allDone,
@@ -180,7 +184,7 @@ export function useGameState(): GameState {
           setScreen('playing')
         }
       } else {
-        persist({ ...appState, roundHistory: newHistory })
+        persist({ ...appState, roundHistory: newHistory, highScore: newHighScore })
         setScreen('round-summary')
       }
     },

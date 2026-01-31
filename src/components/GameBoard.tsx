@@ -1,4 +1,5 @@
 import type { RoundState, Vec2 } from '../lib/game-engine'
+import { getCharColor } from '../lib/sprites'
 
 interface GameBoardProps {
   roundState: RoundState
@@ -34,6 +35,8 @@ export function GameBoard({ roundState, onKeyPress }: GameBoardProps) {
           const zIndex = Math.max(1, Math.round(maxDist - dist))
           const invaderIdx = roundState.invaders.indexOf(inv)
 
+          const charColor = getCharColor(inv.char)
+
           return (
             <div
               key={invaderIdx}
@@ -44,6 +47,9 @@ export function GameBoard({ roundState, onKeyPress }: GameBoardProps) {
                 left: inv.position.x,
                 top: inv.position.y,
                 zIndex,
+                color: charColor.primary,
+                borderColor: charColor.secondary,
+                textShadow: `0 0 6px ${charColor.primary}`,
               }}
             >
               {inv.char}

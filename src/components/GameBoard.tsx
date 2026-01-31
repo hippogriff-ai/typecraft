@@ -5,6 +5,7 @@ import { getCharColor } from '../lib/sprites'
 interface GameBoardProps {
   roundState: RoundState
   accuracyRing?: AccuracyRing
+  boardSize?: { width: number; height: number }
   onKeyPress: (key: string) => void
 }
 
@@ -12,9 +13,11 @@ function distanceToCenter(pos: Vec2, center: Vec2): number {
   return Math.sqrt((pos.x - center.x) ** 2 + (pos.y - center.y) ** 2)
 }
 
-export function GameBoard({ roundState, accuracyRing, onKeyPress }: GameBoardProps) {
-  const center: Vec2 = { x: 400, y: 300 }
-  const maxDist = 500
+export function GameBoard({ roundState, accuracyRing, boardSize, onKeyPress }: GameBoardProps) {
+  const w = boardSize?.width ?? 800
+  const h = boardSize?.height ?? 600
+  const center: Vec2 = { x: w / 2, y: h / 2 }
+  const maxDist = Math.sqrt(w * w + h * h) / 2
 
   return (
     <div

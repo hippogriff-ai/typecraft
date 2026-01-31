@@ -19,9 +19,22 @@ import { SettingsScreen } from './components/SettingsScreen'
 import { StatsScreen } from './components/StatsScreen'
 import './App.css'
 
+function useViewportSize() {
+  const [size, setSize] = useState(() => ({ width: window.innerWidth || 800, height: window.innerHeight || 600 }))
+  useEffect(() => {
+    const handleResize = () => {
+      setSize({ width: window.innerWidth, height: window.innerHeight })
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+  return size
+}
+
 function App() {
   const gameState = useGameState()
   const settings = gameState.settings as Settings
+  const viewportSize = useViewportSize()
   const [paused, setPaused] = useState(false)
   const [roundEndResult, setRoundEndResult] = useState<'cleared' | 'grapes_lost' | null>(null)
   const [showRoundSummary, setShowRoundSummary] = useState(false)
@@ -115,7 +128,7 @@ function App() {
     roundState,
     onRoundEnd: handleRoundEnd,
     onStateChange: handleStateChange,
-    boardSize: { width: 800, height: 600 },
+    boardSize: viewportSize,
     baseSpeed,
   })
 
@@ -229,13 +242,13 @@ function App() {
               onRecalibrate={gameState.recalibrate}
               onOpenSettings={gameState.goToSettings}
             />
-            <GameBoard roundState={roundState} accuracyRing={accuracyRing} onKeyPress={gameLoop.handleKeyPress} />
+            <GameBoard roundState={roundState} accuracyRing={accuracyRing} boardSize={viewportSize} onKeyPress={gameLoop.handleKeyPress} />
 
             {paused && (
               <PauseMenu
                 roundStats={{
-                  accuracy: roundState.invaders.length > 0
-                    ? roundState.score / roundState.invaders.length
+                  accuracy: roundState.totalSpawned > 0
+                    ? roundState.score / roundState.totalSpawned
                     : 0,
                   kills: roundState.score,
                   avgReactionMs: 0,

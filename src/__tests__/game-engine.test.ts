@@ -51,11 +51,11 @@ describe('spawnWave', () => {
     expect(state.currentWave).toBe(1)
   })
 
-  it('wave N spawns 3 + N invaders (active + pending)', () => {
+  it('wave N spawns 3 + N invaders where N starts at 0 (active + pending)', () => {
     let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a'] })
     state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 2 })
-    // Wave 1: 3 + 1 = 4 invaders total (some may be pending for staggered release)
-    expect(state.invaders.length + state.pendingSpawns.length).toBe(4)
+    // Wave 1 (N=0): 3 + 0 = 3 invaders total (some may be pending for staggered release)
+    expect(state.invaders.length + state.pendingSpawns.length).toBe(3)
   })
 
   it('invader characters include focus keys (word-based selection)', () => {
@@ -185,15 +185,14 @@ describe('staggered spawning', () => {
    * Spec: "within a wave, batches spawn every 1-2 seconds, not all at once"
    */
   it('spawnWave stages invaders in pendingSpawns, not all active at once', () => {
+    // Use wave 2 (currentWave=1) to get enough invaders for staggering (3+1=4)
     let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a', 's'] })
+    state = { ...state, currentWave: 1 }
     state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 50 })
-    // First batch should be active immediately, but remaining should be pending
-    const totalPlanned = 4 // wave 1: 3+1=4
-    expect(state.invaders.length + state.pendingSpawns.length).toBe(totalPlanned)
-    // At least some should be pending (unless wave is so small it fits in one batch)
-    // For wave 1 (4 invaders), with batch size ~3, we should have 1+ pending
-    // But if all fit in one batch, all are active — that's ok for small waves
+    // Wave 2 (N=1): 3+1=4 invaders, with batch size ~3, at least 1 pending
+    expect(state.invaders.length + state.pendingSpawns.length).toBe(4)
     expect(state.invaders.length).toBeGreaterThan(0)
+    expect(state.pendingSpawns.length).toBeGreaterThan(0)
   })
 
   /**

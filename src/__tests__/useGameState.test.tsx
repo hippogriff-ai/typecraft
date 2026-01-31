@@ -82,7 +82,7 @@ describe('useGameState — first launch flow', () => {
 
     for (let i = 0; i < 5; i++) {
       act(() => {
-        result.current.completeRound({ grapesLeft: 20, accuracy: 0.8, avgReactionMs: 300, roundScore: 10 })
+        result.current.completeRound({ grapesLeft: 20, accuracy: 0.8, avgReactionMs: 300, roundScore: 10, wpm: 30 })
       })
     }
     expect(result.current.screen).toBe('calibration-summary')
@@ -98,7 +98,7 @@ describe('useGameState — first launch flow', () => {
 
     for (let i = 0; i < 5; i++) {
       act(() => {
-        result.current.completeRound({ grapesLeft: 20, accuracy: 0.8, avgReactionMs: 300, roundScore: 10 })
+        result.current.completeRound({ grapesLeft: 20, accuracy: 0.8, avgReactionMs: 300, roundScore: 10, wpm: 30 })
       })
     }
 

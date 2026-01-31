@@ -6,6 +6,7 @@ import type { RoundState } from './lib/game-engine'
 import { createAccuracyRing, recordHit, recordMiss } from './lib/accuracy-ring'
 import type { AccuracyRing } from './lib/accuracy-ring'
 import { SPEED_PRESETS } from './lib/settings'
+import { calculateWPM } from './lib/stats'
 import { getCharColor } from './lib/sprites'
 import type { Settings } from './lib/settings'
 import { GameBoard } from './components/GameBoard'
@@ -46,6 +47,7 @@ function App() {
     accuracy: 0,
     avgReactionMs: 0,
     roundScore: 0,
+    wpm: 0,
   })
 
   const [accuracyRing, setAccuracyRing] = useState<AccuracyRing>(() => createAccuracyRing())
@@ -55,6 +57,10 @@ function App() {
   const explosionIdRef = useRef(0)
   const absorbIdRef = useRef(0)
   const grapeBurstIdRef = useRef(0)
+
+  // Round metrics tracking
+  const roundStartTimeRef = useRef(0)
+  const reactionTimesRef = useRef<number[]>([])
 
   const [roundState, setRoundState] = useState<RoundState>(() =>
     createRoundState({
@@ -76,6 +82,8 @@ function App() {
     setRoundEndResult(null)
     setShowRoundSummary(false)
     setAccuracyRing(createAccuracyRing())
+    roundStartTimeRef.current = Date.now()
+    reactionTimesRef.current = []
   }, [gameState.focusKeys, settings])
 
   const handleCollisions = useCallback((events: import('./lib/game-engine').CollisionEvent[]) => {
@@ -96,11 +104,20 @@ function App() {
       const kills = state.score
       const accuracy = totalChars > 0 ? kills / totalChars : 0
 
+      const elapsedMs = Date.now() - roundStartTimeRef.current
+      const wpm = calculateWPM({ charCount: totalChars, elapsedMs, accuracy })
+
+      const reactions = reactionTimesRef.current
+      const avgReactionMs = reactions.length > 0
+        ? Math.round(reactions.reduce((s, t) => s + t, 0) / reactions.length)
+        : 0
+
       setLastRoundStats({
         grapesLeft: state.grapes,
         accuracy,
-        avgReactionMs: 0,
+        avgReactionMs,
         roundScore: kills,
+        wpm,
       })
 
       setRoundEndResult(state.roundResult ?? 'cleared')
@@ -119,6 +136,7 @@ function App() {
       accuracy: lastRoundStats.accuracy,
       avgReactionMs: lastRoundStats.avgReactionMs,
       roundScore: lastRoundStats.roundScore,
+      wpm: lastRoundStats.wpm,
     })
     setShowRoundSummary(false)
     setCountdownValue(3)
@@ -216,7 +234,12 @@ function App() {
 
       if (!paused && !roundEndResult && !showRoundSummary && countdownValue === null) {
         const result = gameLoop.handleKeyPress(e.key)
-        recordKeyResult(e.key, result.hit, result.reactionTimeMs ?? 0)
+        if (result.hit && result.reactionTimeMs !== undefined) {
+          recordKeyResult(e.key, true, result.reactionTimeMs)
+          reactionTimesRef.current.push(result.reactionTimeMs)
+        } else {
+          recordKeyResult(e.key, false, 0)
+        }
         setAccuracyRing((ring) => (result.hit ? recordHit(ring) : recordMiss(ring)))
         if (result.hit && result.destroyedPosition) {
           const id = explosionIdRef.current++

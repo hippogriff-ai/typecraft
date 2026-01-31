@@ -116,7 +116,7 @@ export function spawnWave(
   const nextWave = state.currentWave + 1
   const escalation = (nextWave - 1) * 5
   const effectiveSpeed = opts.speed + escalation
-  const rawCount = 3 + nextWave
+  const rawCount = 2 + nextWave // spec: 3+N where N starts at 0, so wave 1 = 3, wave 2 = 4, etc.
   const count = Math.min(rawCount, state.maxInvadersPerWave)
 
   const words = selectWordsForFocus({ focusKeys: state.focusKeys, count: Math.ceil(count / 3) })

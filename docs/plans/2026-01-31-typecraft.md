@@ -32,8 +32,9 @@
 
 ### TODO
 - E2E testing with Playwright
-- Visual polish (pixel-art sprites on invaders, explosion animations, grape burst)
-- clearCalibrationData preserves roundHistory/highScore (verify/fix)
+- Visual polish (absorb animation red flash/dissolve, grape burst animation)
+- ~~clearCalibrationData preserves roundHistory/highScore (verify/fix)~~ DONE
+- ~~Explosion animations~~ DONE (pixel-scatter, 8 particles, 300ms CSS animation)
 
 ---
 

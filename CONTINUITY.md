@@ -19,6 +19,7 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - spawnWave uses selectWordsForFocus to pick words/code-snippets, then expands to character invaders with batch positioning
 - Dead invaders pruned between waves; totalSpawned counter for accurate accuracy
 - Invaders colored by char type (letters=blue/green, symbols=red/orange, numbers=purple)
+- Explosion system: Explosion[] state in App.tsx, passed to GameBoard, 8 CSS-animated particles per explosion, 300ms duration
 
 ## State
 ### Done
@@ -42,14 +43,17 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - **Pause menu accuracy fix**: uses totalSpawned instead of invaders.length
 - **Comprehensive state transition tests**: 17 tests covering full game flow
 - **clearCalibrationData preserves highScore**: verified with test
-- **Lint clean, 161/161 tests pass, build clean**
-- **Playtested in browser**: full flow works end-to-end (menu→demo→calibration)
+- **Destroy animation**: pixel-scatter explosion (8 particles, CSS animation, 300ms, non-blocking)
+- **handleKeyPress returns destroyedPosition**: for rendering explosions at correct location
+- **Flaky wave test fix**: spawnWave trimming now prefers removing non-focus chars
+- **Lint clean, 164/164 tests pass, build clean**
+- **Playtested in browser**: explosions working, full gameplay flow confirmed
 
 ### Now
 - Ready for next iteration
 
 ### Next
-- Visual polish (explosion animations, grape burst)
+- Visual polish (absorb animation, grape burst animation)
 - E2E testing with Playwright
 
 ## Open Questions

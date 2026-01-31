@@ -69,7 +69,11 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - **New high score display (iteration 19)**: RoundSummary shows "NEW HIGH SCORE" when applicable
 - **Grape spring animation (iteration 20)**: grapes animate with spring easing when cluster reflows after loss
 - **Bug fix (iteration 21)**: averageTimeMs no longer diluted by misses (timeMs=0 skipped); reaction time only tracks hits
-- **180 unit tests, 13 E2E tests, build clean, lint clean**
+- **Trend arrow colors (iteration 22)**: green/red/grey trend indicators in StatsScreen
+- **Schema wipe notice (iteration 23)**: "Data format updated" notice shown on main menu after version mismatch wipe
+- **Bug fix (iteration 24)**: practice mode completeRound no longer changes screen to 'round-summary' (which had no renderer); removed dead Screen type
+- **Grape vine/stem (iteration 25)**: thin green vine line with leaf curl above grape cluster
+- **188 unit tests, 13 E2E tests, build clean, lint clean**
 
 ### Now
 - Spec compliance achieved — all major spec items implemented

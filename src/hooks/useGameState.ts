@@ -186,9 +186,10 @@ export function useGameState(): GameState {
           setScreen('playing')
         }
       } else {
-        // In practice mode, persist state but keep screen as 'playing' — App.tsx
-        // manages the round summary overlay and countdown transitions itself.
-        persist({ ...appState, roundHistory: newHistory, highScore: newHighScore })
+        // In practice mode, re-rank weaknesses and select new focus keys for the next round.
+        const updatedState = { ...appState, roundHistory: newHistory, highScore: newHighScore }
+        const nextRound = getNextPracticeRound(updatedState.keyProfiles)
+        persist({ ...updatedState, currentFocusKeys: nextRound.focusKeys })
       }
     },
     [appState, mode, calibrationRoundIndex, calibrationRounds, persist],

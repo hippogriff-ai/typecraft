@@ -35,15 +35,17 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - **High score tracking**: updated on round completion, persisted
 - **Invader colors**: by character type using sprites.ts color system
 - **Dead invader cleanup**: pruned between waves
-- **Lint clean, 146/146 tests pass, build clean**
+- **Staggered spawning**: invaders spawn in batches of ~3 every 1-2s, not all at once
+- **Lint clean, 150/150 tests pass, build clean**
 - **Playtested in browser**: full flow works end-to-end
 
 ### Now
 - Ready for next iteration
 
 ### Next
+- Accuracy ring visual (exists in lib but not rendered on GameBoard)
 - E2E testing with Playwright
-- Visual polish (accuracy ring visual, explosion animations)
+- Visual polish (explosion animations)
 - Responsive board sizing (currently hardcoded 800x600)
 
 ## Open Questions

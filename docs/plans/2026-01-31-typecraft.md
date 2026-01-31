@@ -31,9 +31,10 @@
 | 21 | Visual Polish | TODO | |
 
 ### TODO
-- Visual polish (pixel-art sprites on invaders, animations)
-- Wire updateSettings in SettingsScreen
-- E2E testing
+- Accuracy ring visual on GameBoard (lib exists, not rendered)
+- Visual polish (pixel-art sprites on invaders, explosion animations)
+- E2E testing with Playwright
+- Responsive board sizing (800x600 hardcoded)
 
 ---
 

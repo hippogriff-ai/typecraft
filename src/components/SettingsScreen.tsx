@@ -75,11 +75,11 @@ export function SettingsScreen({ settings, onUpdate, onBack }: SettingsScreenPro
       </div>
 
       <div className="setting-row">
-        <label>Color-blind Mode: {settings.colorBlindMode === 'none' ? 'Off' : settings.colorBlindMode}</label>
+        <label>Color-blind Mode: {!settings.colorBlindMode || settings.colorBlindMode === 'none' ? 'Off' : settings.colorBlindMode}</label>
         <div className="speed-buttons">
           <button
             onClick={() => onUpdate({ ...settings, colorBlindMode: 'none' })}
-            aria-pressed={settings.colorBlindMode === 'none'}
+            aria-pressed={!settings.colorBlindMode || settings.colorBlindMode === 'none'}
           >
             Off
           </button>

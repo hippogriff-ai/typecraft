@@ -323,14 +323,31 @@ function App() {
           />
         )
 
-      case 'calibration-summary':
+      case 'calibration-summary': {
+        const profiles = Object.values(gameState.keyProfiles)
+        const totalAttempts = profiles.reduce((s, p) => s + p.totalAttempts, 0)
+        const totalCorrect = profiles.reduce((s, p) => s + p.correctAttempts, 0)
+        const overallAccuracy = totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0
+        const strongKeys = [...profiles]
+          .filter((p) => p.totalAttempts > 0)
+          .sort((a, b) => {
+            const accA = a.correctAttempts / a.totalAttempts
+            const accB = b.correctAttempts / b.totalAttempts
+            return accB - accA
+          })
+          .slice(0, 5)
+          .map((p) => p.key)
+
         return (
           <div data-testid="calibration-summary" className="calibration-summary">
             <h2>Calibration Complete</h2>
-            <p>Your weakest keys: {gameState.weakKeys.join(', ') || 'None identified yet'}</p>
+            <p data-testid="overall-accuracy">Overall Accuracy: {overallAccuracy}%</p>
+            <p data-testid="strongest-keys">Strongest keys: {strongKeys.join(', ') || 'N/A'}</p>
+            <p data-testid="weakest-keys">Weakest keys: {gameState.weakKeys.join(', ') || 'None identified yet'}</p>
             <button onClick={gameState.beginPractice}>Begin Practice</button>
           </div>
         )
+      }
 
       case 'playing':
         return (

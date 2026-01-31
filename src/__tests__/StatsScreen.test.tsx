@@ -63,6 +63,25 @@ describe('StatsScreen', () => {
     expect(strongBg).not.toBe(weakBg)
   })
 
+  /**
+   * Spec: "Trend: Arrow indicator — improving (green arrow up), declining (red arrow down), or stable (grey dash)"
+   * Each trend indicator should be color-coded to match its direction.
+   */
+  it('color-codes trend arrows: green for improving, red for declining, grey for stable', () => {
+    render(<StatsScreen keyStats={keyStats} onBack={vi.fn()} />)
+    const improvingRow = screen.getByTestId('stat-row-a')
+    const decliningRow = screen.getByTestId('stat-row-(')
+    const stableRow = screen.getByTestId('stat-row-5')
+
+    const improvingTrend = within(improvingRow).getByTestId('trend-indicator')
+    const decliningTrend = within(decliningRow).getByTestId('trend-indicator')
+    const stableTrend = within(stableRow).getByTestId('trend-indicator')
+
+    expect(improvingTrend.style.color).toContain('green')
+    expect(decliningTrend.style.color).toContain('red')
+    expect(stableTrend.style.color).toContain('grey')
+  })
+
   it('has a back button', async () => {
     const onBack = vi.fn()
     const user = userEvent.setup()

@@ -43,9 +43,9 @@ export function StatsScreen({ keyStats, onBack }: StatsScreenProps) {
 
   const trendArrow = (trend: KeyStat['trend']) => {
     switch (trend) {
-      case 'improving': return '\u2191'
-      case 'declining': return '\u2193'
-      case 'stable': return '\u2014'
+      case 'improving': return { symbol: '\u2191', color: 'green' }
+      case 'declining': return { symbol: '\u2193', color: 'red' }
+      case 'stable': return { symbol: '\u2014', color: 'grey' }
     }
   }
 
@@ -81,7 +81,7 @@ export function StatsScreen({ keyStats, onBack }: StatsScreenProps) {
               <td>{stat.totalKills}</td>
               <td>{Math.round(stat.bestAccuracy * 100)}%</td>
               <td>{stat.bestSpeedMs}ms</td>
-              <td>{trendArrow(stat.trend)}</td>
+              <td><span data-testid="trend-indicator" style={{ color: trendArrow(stat.trend).color }}>{trendArrow(stat.trend).symbol}</span></td>
             </tr>
           ))}
         </tbody>

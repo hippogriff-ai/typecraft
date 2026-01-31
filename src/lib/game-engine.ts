@@ -13,11 +13,20 @@ export interface Invader {
   spawnTime: number
 }
 
+export interface PendingInvader {
+  char: string
+  position: Vec2
+  center: Vec2
+  speed: number
+  spawnAt: number
+}
+
 export interface RoundState {
   grapes: number
   maxGrapes: number
   damageCounter: number
   invaders: Invader[]
+  pendingSpawns: PendingInvader[]
   currentWave: number
   totalWaves: number
   focusKeys: string[]
@@ -71,6 +80,7 @@ export function createRoundState(opts: {
     maxGrapes: opts.grapeCount,
     damageCounter: 0,
     invaders: [],
+    pendingSpawns: [],
     currentWave: 0,
     totalWaves: opts.totalWaves,
     focusKeys: opts.focusKeys,
@@ -129,26 +139,64 @@ export function spawnWave(
     chars.push({ char, batchOrigin: origin })
   }
 
-  const newInvaders: Invader[] = chars.map(({ char, batchOrigin }) => {
+  // Split into batches of ~3 characters, staggered 1-2s apart
+  const BATCH_SIZE = 3
+  const now = Date.now()
+  const immediateInvaders: Invader[] = []
+  const pending: PendingInvader[] = []
+
+  for (let i = 0; i < chars.length; i++) {
+    const batchIndex = Math.floor(i / BATCH_SIZE)
+    const { char, batchOrigin } = chars[i]
     const spread = 30
     const position = {
       x: batchOrigin.x + (Math.random() - 0.5) * spread,
       y: batchOrigin.y + (Math.random() - 0.5) * spread,
     }
-    return createInvader({
-      char,
-      position,
-      center: opts.center,
-      speed: effectiveSpeed,
-      spawnTime: Date.now(),
-    })
-  })
+
+    if (batchIndex === 0) {
+      // First batch spawns immediately
+      immediateInvaders.push(
+        createInvader({ char, position, center: opts.center, speed: effectiveSpeed, spawnTime: now }),
+      )
+    } else {
+      // Subsequent batches delayed by 1-2s per batch
+      const delay = batchIndex * (1000 + Math.random() * 1000)
+      pending.push({ char, position, center: opts.center, speed: effectiveSpeed, spawnAt: now + delay })
+    }
+  }
+
+  return {
+    ...state,
+    invaders: [...state.invaders, ...immediateInvaders],
+    pendingSpawns: [...state.pendingSpawns, ...pending],
+    currentWave: nextWave,
+    totalSpawned: state.totalSpawned + count,
+  }
+}
+
+export function releasePendingSpawns(state: RoundState, currentTime: number): RoundState {
+  const ready: PendingInvader[] = []
+  const stillPending: PendingInvader[] = []
+
+  for (const p of state.pendingSpawns) {
+    if (currentTime >= p.spawnAt) {
+      ready.push(p)
+    } else {
+      stillPending.push(p)
+    }
+  }
+
+  if (ready.length === 0) return state
+
+  const newInvaders = ready.map((p) =>
+    createInvader({ char: p.char, position: p.position, center: p.center, speed: p.speed, spawnTime: currentTime }),
+  )
 
   return {
     ...state,
     invaders: [...state.invaders, ...newInvaders],
-    currentWave: nextWave,
-    totalSpawned: state.totalSpawned + newInvaders.length,
+    pendingSpawns: stillPending,
   }
 }
 
@@ -247,6 +295,7 @@ export function checkRoundComplete(state: RoundState): RoundState {
 
   if (
     state.currentWave >= state.totalWaves &&
+    state.pendingSpawns.length === 0 &&
     state.invaders.every((inv) => !inv.alive)
   ) {
     return { ...state, roundOver: true, roundResult: 'cleared' }

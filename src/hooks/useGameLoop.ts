@@ -6,6 +6,7 @@ import {
   handleKeyPress,
   spawnWave,
   checkRoundComplete,
+  releasePendingSpawns,
 } from '../lib/game-engine'
 
 export interface UseGameLoopProps {
@@ -51,6 +52,8 @@ export function useGameLoop(props: UseGameLoopProps) {
       let state = stateRef.current
       const { onRoundEnd, onStateChange, boardSize, baseSpeed = 50 } = propsRef.current
 
+      state = releasePendingSpawns(state, Date.now())
+
       state = tickInvaders(state, {
         deltaSeconds,
         center,
@@ -68,7 +71,7 @@ export function useGameLoop(props: UseGameLoopProps) {
         return
       }
 
-      const allResolved = state.invaders.every((inv) => !inv.alive)
+      const allResolved = state.invaders.every((inv) => !inv.alive) && state.pendingSpawns.length === 0
       if (allResolved && state.currentWave < state.totalWaves) {
         state = { ...state, invaders: [] }
         state = spawnWave(state, {

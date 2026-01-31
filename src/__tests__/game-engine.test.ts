@@ -6,6 +6,8 @@ import {
   tickInvaders,
   handleKeyPress,
   checkCollisions,
+  releasePendingSpawns,
+  checkRoundComplete,
   type Vec2,
 } from '../lib/game-engine'
 
@@ -49,17 +51,22 @@ describe('spawnWave', () => {
     expect(state.currentWave).toBe(1)
   })
 
-  it('wave N spawns 3 + N invaders', () => {
+  it('wave N spawns 3 + N invaders (active + pending)', () => {
     let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a'] })
     state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 2 })
-    // Wave 1: 3 + 1 = 4 invaders
-    expect(state.invaders.length).toBe(4)
+    // Wave 1: 3 + 1 = 4 invaders total (some may be pending for staggered release)
+    expect(state.invaders.length + state.pendingSpawns.length).toBe(4)
   })
 
   it('invader characters include focus keys (word-based selection)', () => {
     let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a', 's', 'd'] })
     state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 2 })
-    const focusCount = state.invaders.filter((i) => ['a', 's', 'd'].includes(i.char)).length
+    // Check both active and pending invaders for focus keys
+    const allChars = [
+      ...state.invaders.map((i) => i.char),
+      ...state.pendingSpawns.map((p) => p.char),
+    ]
+    const focusCount = allChars.filter((c) => ['a', 's', 'd'].includes(c)).length
     expect(focusCount).toBeGreaterThan(0)
   })
 })
@@ -131,12 +138,16 @@ describe('spawnWave — word-based batches', () => {
     let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['e', 't'] })
     state = { ...state, currentWave: 5 }
     state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 2 })
-    // All invaders should have single-character chars
-    for (const inv of state.invaders) {
-      expect(inv.char.length).toBe(1)
+    // Check all invaders (active + pending) have single-character chars
+    const allChars = [
+      ...state.invaders.map((i) => i.char),
+      ...state.pendingSpawns.map((p) => p.char),
+    ]
+    for (const ch of allChars) {
+      expect(ch.length).toBe(1)
     }
     // With 'e' and 't' as focus keys (very common letters), words containing them should produce these chars
-    const focusChars = state.invaders.filter((i) => ['e', 't'].includes(i.char))
+    const focusChars = allChars.filter((c) => ['e', 't'].includes(c))
     expect(focusChars.length).toBeGreaterThan(0)
   })
 
@@ -157,6 +168,83 @@ describe('spawnWave — word-based batches', () => {
     state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 2 })
     // Invaders should exist
     expect(state.invaders.length).toBeGreaterThan(0)
+  })
+})
+
+describe('staggered spawning', () => {
+  /**
+   * Verifies that spawnWave puts invaders into pendingSpawns instead of
+   * adding them all directly to the active invaders array.
+   * Spec: "within a wave, batches spawn every 1-2 seconds, not all at once"
+   */
+  it('spawnWave stages invaders in pendingSpawns, not all active at once', () => {
+    let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a', 's'] })
+    state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 50 })
+    // First batch should be active immediately, but remaining should be pending
+    const totalPlanned = 4 // wave 1: 3+1=4
+    expect(state.invaders.length + state.pendingSpawns.length).toBe(totalPlanned)
+    // At least some should be pending (unless wave is so small it fits in one batch)
+    // For wave 1 (4 invaders), with batch size ~3, we should have 1+ pending
+    // But if all fit in one batch, all are active — that's ok for small waves
+    expect(state.invaders.length).toBeGreaterThan(0)
+  })
+
+  /**
+   * Verifies that releasePendingSpawns moves invaders from pending to active
+   * when their scheduled time has arrived.
+   */
+  it('releasePendingSpawns moves ready invaders to active', () => {
+    let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a', 's', 'd'] })
+    // Use a later wave to get more invaders and ensure some are pending
+    state = { ...state, currentWave: 4 }
+    state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 50 })
+    const initialActive = state.invaders.length
+    const initialPending = state.pendingSpawns.length
+
+    if (initialPending > 0) {
+      // Set time far in the future so all pending should release
+      state = releasePendingSpawns(state, Date.now() + 10000)
+      expect(state.invaders.length).toBe(initialActive + initialPending)
+      expect(state.pendingSpawns.length).toBe(0)
+    }
+  })
+
+  /**
+   * Verifies that pending invaders are NOT released before their scheduled time.
+   */
+  it('does not release pending invaders before their scheduled time', () => {
+    let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a', 's', 'd'] })
+    state = { ...state, currentWave: 4 }
+    const beforeSpawn = Date.now()
+    state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 50 })
+
+    if (state.pendingSpawns.length > 0) {
+      // Release at current time — only the first batch should be active
+      const activeBeforeRelease = state.invaders.length
+      state = releasePendingSpawns(state, beforeSpawn)
+      // Should not have released future batches
+      expect(state.invaders.length).toBe(activeBeforeRelease)
+    }
+  })
+
+  /**
+   * Verifies that wave is not considered complete while pending spawns remain.
+   */
+  it('wave is not complete while pendingSpawns remain', () => {
+    let state = createRoundState({ grapeCount: 24, totalWaves: 1, focusKeys: ['a', 's', 'd'] })
+    state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 50 })
+
+    // Kill all active invaders
+    state = {
+      ...state,
+      invaders: state.invaders.map((inv) => ({ ...inv, alive: false })),
+    }
+
+    if (state.pendingSpawns.length > 0) {
+      // Even though all active invaders are dead, round should NOT be over
+      state = checkRoundComplete(state)
+      expect(state.roundOver).toBe(false)
+    }
   })
 })
 

@@ -49,6 +49,14 @@ export function StatsScreen({ keyStats, onBack }: StatsScreenProps) {
     }
   }
 
+  // Color-code rows by weakness: red (weak) → green (strong) based on accuracy
+  const rowColor = (accuracy: number): string => {
+    // accuracy 0→1 maps to red→green
+    const r = Math.round(255 * (1 - accuracy))
+    const g = Math.round(255 * accuracy)
+    return `rgba(${r}, ${g}, 60, 0.15)`
+  }
+
   return (
     <div className="stats-screen" data-testid="stats-screen">
       <h2>Key Statistics</h2>
@@ -66,7 +74,7 @@ export function StatsScreen({ keyStats, onBack }: StatsScreenProps) {
         </thead>
         <tbody>
           {sorted.map((stat) => (
-            <tr key={stat.key} data-testid={`stat-row-${stat.key}`}>
+            <tr key={stat.key} data-testid={`stat-row-${stat.key}`} style={{ backgroundColor: rowColor(stat.accuracy) }}>
               <td>{stat.key}</td>
               <td>{Math.round(stat.accuracy * 100)}%</td>
               <td>{stat.avgSpeedMs}ms</td>

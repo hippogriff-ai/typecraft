@@ -44,6 +44,25 @@ describe('StatsScreen', () => {
     expect(within(rows[0]).getByText('(')).toBeInTheDocument()
   })
 
+  /**
+   * Spec: "Color-coded by weakness: high weakness keys in red/warm tones, strong keys in green/cool tones"
+   * Rows with high accuracy should have green-tinted backgrounds, low accuracy should have red-tinted backgrounds.
+   */
+  it('color-codes rows by weakness (accuracy-based)', () => {
+    render(<StatsScreen keyStats={keyStats} onBack={vi.fn()} />)
+    const strongRow = screen.getByTestId('stat-row-a')
+    const weakRow = screen.getByTestId('stat-row-(')
+    // Strong key (95% accuracy) should have green-dominant background
+    expect(strongRow).toHaveStyle({ backgroundColor: expect.stringContaining('rgba(') })
+    const strongBg = strongRow.style.backgroundColor
+    const weakBg = weakRow.style.backgroundColor
+    // Both should have background colors set
+    expect(strongBg).toBeTruthy()
+    expect(weakBg).toBeTruthy()
+    // They should be different colors
+    expect(strongBg).not.toBe(weakBg)
+  })
+
   it('has a back button', async () => {
     const onBack = vi.fn()
     const user = userEvent.setup()

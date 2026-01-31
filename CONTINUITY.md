@@ -68,7 +68,8 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - **Recalibrate confirmation dialog (iteration 19)**: MainMenu shows confirm/cancel before recalibrating
 - **New high score display (iteration 19)**: RoundSummary shows "NEW HIGH SCORE" when applicable
 - **Grape spring animation (iteration 20)**: grapes animate with spring easing when cluster reflows after loss
-- **179 unit tests, 13 E2E tests, build clean, lint clean**
+- **Bug fix (iteration 21)**: averageTimeMs no longer diluted by misses (timeMs=0 skipped); reaction time only tracks hits
+- **180 unit tests, 13 E2E tests, build clean, lint clean**
 
 ### Now
 - Spec compliance achieved — all major spec items implemented

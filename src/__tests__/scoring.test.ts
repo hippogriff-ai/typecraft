@@ -92,6 +92,19 @@ describe('recordKeyPress', () => {
     expect(profile.bestSpeedMs).toBeLessThanOrEqual(267)
   })
 
+  /**
+   * Spec: "Speed: average reaction time in milliseconds from invader spawn to keypress"
+   * Misses (timeMs=0) should not dilute the average reaction time, since reaction time
+   * is only meaningful for destroyed invaders.
+   */
+  it('does not dilute averageTimeMs with miss timeMs=0', () => {
+    let profile = createKeyProfile('a')
+    profile = recordKeyPress(profile, { correct: true, timeMs: 200 })
+    profile = recordKeyPress(profile, { correct: false, timeMs: 0 })
+    // averageTimeMs should stay at 200, not become (200+0)/2 = 100
+    expect(profile.averageTimeMs).toBe(200)
+  })
+
   it('appends to history', () => {
     let profile = createKeyProfile('a')
     profile = recordKeyPress(profile, { correct: true, timeMs: 200 })

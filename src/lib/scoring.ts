@@ -31,8 +31,11 @@ export function recordKeyPress(
 ): KeyProfile {
   const totalAttempts = profile.totalAttempts + 1
   const correctAttempts = profile.correctAttempts + (press.correct ? 1 : 0)
-  const averageTimeMs =
-    (profile.averageTimeMs * profile.totalAttempts + press.timeMs) / totalAttempts
+  // Only include timeMs > 0 in the average. Misses are recorded with timeMs=0
+  // and should not dilute reaction time (which only measures destroyed invaders).
+  const averageTimeMs = press.timeMs > 0
+    ? (profile.averageTimeMs * profile.totalAttempts + press.timeMs) / totalAttempts
+    : profile.averageTimeMs
 
   const accuracy = correctAttempts / totalAttempts
   const bestAccuracy = Math.max(profile.bestAccuracy, accuracy)

@@ -28,7 +28,7 @@
 | 18 | Onboarding Demo | DONE | src/components/OnboardingDemo.tsx |
 | 19 | Pause Menu | DONE | src/components/PauseMenu.tsx |
 | 20 | App Shell Integration | DONE | src/App.tsx, src/App.css, src/index.css, src/__tests__/App.test.tsx |
-| 21 | Visual Polish | TODO | |
+| 21 | Visual Polish | DONE | src/App.css, src/components/GameBoard.tsx |
 
 ### TODO
 - ~~E2E testing with Playwright~~ DONE (13 E2E tests, Playwright + Chromium)

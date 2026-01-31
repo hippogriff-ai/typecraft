@@ -384,7 +384,9 @@ function App() {
                     ? roundState.score / roundState.totalSpawned
                     : 0,
                   kills: roundState.score,
-                  avgReactionMs: 0,
+                  avgReactionMs: reactionTimesRef.current.length > 0
+                    ? Math.round(reactionTimesRef.current.reduce((s, t) => s + t, 0) / reactionTimesRef.current.length)
+                    : 0,
                 }}
                 onResume={() => {
                   setPaused(false)

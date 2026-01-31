@@ -115,13 +115,15 @@ describe('clearCalibrationData', () => {
   /**
    * Spec: "Recalibration Resets: accuracy, speed, and trend for all key profiles.
    * Keeps: high score, total kills, round history (lifetime achievements preserved)"
-   * correctAttempts = total kills, so it must survive recalibration.
+   * lifetimeKills preserves total kills; correctAttempts resets to 0 so accuracy
+   * calculations are correct post-recalibration.
    */
-  it('preserves total kills (correctAttempts) per key on recalibration', () => {
+  it('preserves lifetimeKills and resets correctAttempts on recalibration', () => {
     const profile = {
       ...createKeyProfile('a'),
       totalAttempts: 20,
       correctAttempts: 15,
+      lifetimeKills: 15,
       averageTimeMs: 250,
       bestAccuracy: 0.9,
       bestSpeedMs: 100,
@@ -138,8 +140,10 @@ describe('clearCalibrationData', () => {
 
     const loaded = loadState()
     expect(loaded!.keyProfiles['a']).toBeDefined()
-    // Total kills preserved
-    expect(loaded!.keyProfiles['a'].correctAttempts).toBe(15)
+    // lifetimeKills preserved
+    expect(loaded!.keyProfiles['a'].lifetimeKills).toBe(15)
+    // correctAttempts reset (so accuracy calculations work correctly)
+    expect(loaded!.keyProfiles['a'].correctAttempts).toBe(0)
     // Accuracy, speed, trend reset
     expect(loaded!.keyProfiles['a'].totalAttempts).toBe(0)
     expect(loaded!.keyProfiles['a'].averageTimeMs).toBe(0)

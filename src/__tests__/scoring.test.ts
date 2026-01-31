@@ -119,6 +119,24 @@ describe('recordKeyPress', () => {
     expect(profile.bestSpeedMs).toBe(100)
   })
 
+  /**
+   * Spec: "Total kills: lifetime count of invaders destroyed for that key"
+   * lifetimeKills should increment on each hit and survive recalibration.
+   */
+  it('tracks lifetimeKills on correct presses', () => {
+    let profile = createKeyProfile('a')
+    expect(profile.lifetimeKills).toBe(0)
+
+    profile = recordKeyPress(profile, { correct: true, timeMs: 200 })
+    expect(profile.lifetimeKills).toBe(1)
+
+    profile = recordKeyPress(profile, { correct: false, timeMs: 0 })
+    expect(profile.lifetimeKills).toBe(1) // miss doesn't increment
+
+    profile = recordKeyPress(profile, { correct: true, timeMs: 150 })
+    expect(profile.lifetimeKills).toBe(2)
+  })
+
   it('appends to history', () => {
     let profile = createKeyProfile('a')
     profile = recordKeyPress(profile, { correct: true, timeMs: 200 })

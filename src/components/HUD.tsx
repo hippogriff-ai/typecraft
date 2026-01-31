@@ -29,8 +29,8 @@ export function HUD(props: HUDProps) {
         <span data-testid="round-score">Score:{props.roundScore}</span>
         <span data-testid="wpm">WPM:{props.wpm}</span>
         <span data-testid="learning-speed">{speedDisplay}</span>
-        <button onClick={props.onOpenSettings} aria-label="Settings">Settings</button>
-        <button onClick={props.onRecalibrate} aria-label="Recalibrate">Recalibrate</button>
+        <button onClick={props.onOpenSettings} aria-label="Settings">{'\u2699'}</button>
+        <button onClick={props.onRecalibrate} aria-label="Recalibrate">Recal</button>
       </div>
       <div data-testid="weak-keys" className="weak-keys">
         {props.weakKeys.map((key) => (

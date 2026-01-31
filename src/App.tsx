@@ -296,7 +296,7 @@ function App() {
     key: p.key,
     accuracy: p.totalAttempts > 0 ? p.correctAttempts / p.totalAttempts : 0,
     avgSpeedMs: Math.round(p.averageTimeMs),
-    totalKills: p.correctAttempts,
+    totalKills: p.lifetimeKills ?? p.correctAttempts,
     bestAccuracy: p.bestAccuracy ?? (p.totalAttempts > 0 ? p.correctAttempts / p.totalAttempts : 0),
     bestSpeedMs: Math.round(p.bestSpeedMs || p.averageTimeMs),
     trend: computeTrend(p),
@@ -382,7 +382,7 @@ function App() {
               onRecalibrate={gameState.recalibrate}
               onOpenSettings={gameState.goToSettings}
             />
-            <GameBoard roundState={roundState} accuracyRing={accuracyRing} boardSize={viewportSize} explosions={explosions} absorbs={absorbs} grapeBursts={grapeBursts} onKeyPress={gameLoop.handleKeyPress} />
+            <GameBoard roundState={roundState} accuracyRing={accuracyRing} boardSize={viewportSize} explosions={explosions} absorbs={absorbs} grapeBursts={grapeBursts} colorBlindMode={settings.colorBlindMode} onKeyPress={gameLoop.handleKeyPress} />
 
             {paused && (
               <PauseMenu

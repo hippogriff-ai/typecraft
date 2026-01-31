@@ -7,6 +7,7 @@ export interface KeyProfile {
   key: string
   totalAttempts: number
   correctAttempts: number
+  lifetimeKills: number
   averageTimeMs: number
   bestAccuracy: number
   bestSpeedMs: number
@@ -18,6 +19,7 @@ export function createKeyProfile(key: string): KeyProfile {
     key,
     totalAttempts: 0,
     correctAttempts: 0,
+    lifetimeKills: 0,
     averageTimeMs: 0,
     bestAccuracy: 0,
     bestSpeedMs: 0,
@@ -31,6 +33,7 @@ export function recordKeyPress(
 ): KeyProfile {
   const totalAttempts = profile.totalAttempts + 1
   const correctAttempts = profile.correctAttempts + (press.correct ? 1 : 0)
+  const lifetimeKills = profile.lifetimeKills + (press.correct ? 1 : 0)
   // Only include timeMs > 0 in the average. Misses are recorded with timeMs=0
   // and should not dilute reaction time (which only measures destroyed invaders).
   const averageTimeMs = press.timeMs > 0
@@ -47,6 +50,7 @@ export function recordKeyPress(
     ...profile,
     totalAttempts,
     correctAttempts,
+    lifetimeKills,
     averageTimeMs,
     bestAccuracy,
     bestSpeedMs,

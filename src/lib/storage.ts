@@ -85,7 +85,8 @@ export function clearCalibrationData(): void {
     resetProfiles[key] = {
       key: profile.key,
       totalAttempts: 0,
-      correctAttempts: profile.correctAttempts,
+      correctAttempts: 0,
+      lifetimeKills: profile.lifetimeKills ?? 0,
       averageTimeMs: 0,
       bestAccuracy: 0,
       bestSpeedMs: 0,

@@ -16,6 +16,7 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - stats.ts uses SessionRecord type (with timestamp+wpm) per existing tests
 - Wave generator and game engine use deterministic 70/30 split (pre-allocated counts) to avoid flaky tests
 - StatsScreen defaults to sorting by key (not accuracy) so clicking Accuracy header sorts ascending first
+- spawnWave uses selectWordsForFocus to pick words/code-snippets, then expands to character invaders with batch positioning
 
 ## State
 ### Done
@@ -25,16 +26,19 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - **Both hooks implemented**: useGameState, useGameLoop
 - **All 10 components implemented**: HUD, GameBoard, RoundSummary, MainMenu, RoundEnd, Countdown, SettingsScreen, StatsScreen, OnboardingDemo, PauseMenu
 - **App.tsx fully wired** — menu → demo → calibration-summary → playing (with pause, round-end, round-summary)
-- **App.test.tsx** — 7 tests for screen navigation (menu, dark theme, demo on first launch, returning player, stats, settings)
 - **Dark theme CSS** — App.css and index.css fully styled
-- **141/141 tests pass across 22 test files, build passes clean**
+- **Settings persistence** — updateSettings in useGameState, wired to SettingsScreen
+- **Word-based batch spawning** — spawnWave uses selectWordsForFocus, characters from same word spawn near each other
+- **Key profile tracking** — recordKeyResult in useGameState captures hit/miss/reaction time from gameplay, enables adaptive weakness detection
+- **146/146 tests pass across 22 test files, build passes clean**
+- **Playtested in browser** — full flow works: menu → demo → calibration → gameplay with HUD, grape cluster, invaders
 
 ### Now
-- Iteration 3: Pick next most important task and implement
+- Iteration complete. Ready for next iteration.
 
 ### Next
-- Wire updateSettings in SettingsScreen (currently noop)
-- Visual polish (pixel-art sprites on invaders, animations)
+- Calibration focus keys: ensure calibration rounds set the correct group-specific focus keys
+- Visual polish (pixel-art sprites on invaders, animations, accuracy ring visual)
 - E2E testing with Playwright
 
 ## Open Questions

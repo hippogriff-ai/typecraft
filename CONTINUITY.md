@@ -53,14 +53,15 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - **Absorb animation**: red flash + dissolve inward at collision point (400ms CSS animation)
 - **Grape burst animation**: 6 juice droplet particles spray outward when grape lost (500ms CSS animation)
 - **checkCollisions returns CollisionEvent[]**: position + grapeLost flag for animation triggers
-- **166 unit tests, 13 E2E tests, build clean, lint clean**
+- **Bug fixes (iteration 9)**: WPM with accuracy multiplier, real WPM tracking in rounds, learning speed 5-round window, wave formula 3+N (N=0), reaction time accumulation, miss doesn't record 0ms
+- **167 unit tests, 13 E2E tests, build clean, lint clean**
 
 ### Now
-- All plan TODO items complete. Ready for next iteration.
+- Ready for next iteration
 
 ### Next
-- Bug hunting and polish
-- Additional visual polish or gameplay tuning
+- More bug fixes from code review (per-key bests, trend calculation, onboarding demo prompts)
+- Additional gameplay tuning
 
 ## Open Questions
 - None

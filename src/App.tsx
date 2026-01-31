@@ -120,7 +120,8 @@ function App() {
       }
 
       if (!paused && !roundEndResult && !showRoundSummary) {
-        gameLoop.handleKeyPress(e.key)
+        const result = gameLoop.handleKeyPress(e.key)
+        gameState.recordKeyResult(e.key, result.hit, result.reactionTimeMs ?? 0)
       }
     }
     window.addEventListener('keydown', handler)

@@ -61,6 +61,29 @@ describe('useGameState', () => {
     expect(stored.settings.speedPreset).toBe('fast')
   })
 
+  it('recordKeyResult updates key profiles and persists', () => {
+    const { result } = renderHook(() => useGameState())
+    expect(Object.keys(result.current.keyProfiles)).toHaveLength(0)
+
+    act(() => {
+      result.current.recordKeyResult('a', true, 200)
+    })
+
+    expect(result.current.keyProfiles['a']).toBeDefined()
+    expect(result.current.keyProfiles['a'].correctAttempts).toBe(1)
+    expect(result.current.keyProfiles['a'].totalAttempts).toBe(1)
+
+    act(() => {
+      result.current.recordKeyResult('a', false, 500)
+    })
+
+    expect(result.current.keyProfiles['a'].totalAttempts).toBe(2)
+    expect(result.current.keyProfiles['a'].correctAttempts).toBe(1)
+
+    const stored = JSON.parse(localStorage.getItem('typecraft')!)
+    expect(stored.keyProfiles['a'].totalAttempts).toBe(2)
+  })
+
   it('recalibrate resets to calibration mode', () => {
     localStorage.setItem(
       'typecraft',

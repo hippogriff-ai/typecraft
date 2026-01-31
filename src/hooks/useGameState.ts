@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import { loadState, saveState, clearCalibrationData } from '../lib/storage'
 import type { AppState } from '../lib/storage'
-import { rankWeaknesses } from '../lib/scoring'
+import { rankWeaknesses, createKeyProfile, recordKeyPress } from '../lib/scoring'
 import type { KeyProfile } from '../lib/scoring'
 import { calculateLearningSpeed } from '../lib/stats'
 import type { SessionRecord } from '../lib/stats'
@@ -23,6 +23,7 @@ export interface GameState {
   calibrationProgress: AppState['calibrationProgress']
   settings: NonNullable<AppState['settings']>
   updateSettings: (settings: NonNullable<AppState['settings']>) => void
+  recordKeyResult: (key: string, hit: boolean, reactionTimeMs: number) => void
   startGame: () => void
   completeDemo: () => void
   completeRound: (stats: { grapesLeft: number; accuracy: number; avgReactionMs: number }) => void
@@ -95,6 +96,16 @@ export function useGameState(): GameState {
   const updateSettings = useCallback(
     (newSettings: NonNullable<AppState['settings']>) => {
       persist({ ...appState, settings: newSettings })
+    },
+    [appState, persist],
+  )
+
+  const recordKeyResult = useCallback(
+    (key: string, hit: boolean, reactionTimeMs: number) => {
+      const existing = appState.keyProfiles[key] ?? createKeyProfile(key)
+      const updated = recordKeyPress(existing, { correct: hit, timeMs: reactionTimeMs })
+      const newProfiles = { ...appState.keyProfiles, [key]: updated }
+      persist({ ...appState, keyProfiles: newProfiles })
     },
     [appState, persist],
   )
@@ -195,6 +206,7 @@ export function useGameState(): GameState {
     calibrationProgress: appState.calibrationProgress,
     settings,
     updateSettings,
+    recordKeyResult,
     startGame,
     completeDemo,
     completeRound,

@@ -40,7 +40,7 @@ export function recordKeyPress(
   const accuracy = correctAttempts / totalAttempts
   const bestAccuracy = Math.max(profile.bestAccuracy, accuracy)
   const bestSpeedMs = press.correct && press.timeMs > 0
-    ? (profile.bestSpeedMs === 0 ? averageTimeMs : Math.min(profile.bestSpeedMs, averageTimeMs))
+    ? (profile.bestSpeedMs === 0 ? press.timeMs : Math.min(profile.bestSpeedMs, press.timeMs))
     : profile.bestSpeedMs
 
   return {

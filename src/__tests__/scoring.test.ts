@@ -105,6 +105,20 @@ describe('recordKeyPress', () => {
     expect(profile.averageTimeMs).toBe(200)
   })
 
+  /**
+   * Spec: "Best speed: fastest average reaction time for that key"
+   * bestSpeedMs should track the fastest individual reaction time, not the running average.
+   */
+  it('bestSpeedMs tracks fastest individual hit time, not running average', () => {
+    let profile = createKeyProfile('a')
+    profile = recordKeyPress(profile, { correct: true, timeMs: 300 })
+    expect(profile.bestSpeedMs).toBe(300)
+
+    profile = recordKeyPress(profile, { correct: true, timeMs: 100 })
+    // bestSpeedMs should be 100 (the faster hit), not 200 (the average)
+    expect(profile.bestSpeedMs).toBe(100)
+  })
+
   it('appends to history', () => {
     let profile = createKeyProfile('a')
     profile = recordKeyPress(profile, { correct: true, timeMs: 200 })

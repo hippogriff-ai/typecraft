@@ -21,6 +21,7 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - Invaders colored by char type (letters=blue/green, symbols=red/orange, numbers=purple)
 - Explosion system: Explosion[] state in App.tsx, passed to GameBoard, 8 CSS-animated particles per explosion, 300ms duration
 - bestSpeedMs uses 0 sentinel (not Infinity) to survive JSON serialization
+- OnboardingDemo uses rAF animation loop with queueMicrotask for proximity state update (avoids lint errors with setState-in-effect and ref-during-render)
 
 ## State
 ### Done
@@ -56,17 +57,21 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - **Bug fixes (iteration 9)**: WPM with accuracy multiplier, real WPM tracking in rounds, learning speed 5-round window, wave formula 3+N (N=0), reaction time accumulation, miss doesn't record 0ms
 - **Trend calculation (iteration 10)**: computeTrend() using linear regression on last 10 data points per key
 - **Removed duplicate round info**: GameBoard no longer renders wave/grape info (already in HUD)
-- **Per-key bests (iteration 11)**: bestAccuracy and bestSpeedMs tracked in KeyProfile, used in StatsScreen
+- **Per-key bests (iteration 11)**: bestAccuracy and bestSpeedMs tracked in KeyProfile, JSON-safe 0 sentinel
 - **Keys improved/declined (iteration 12)**: round-start accuracy snapshot compared to round-end, passed to RoundSummary
 - **Stats screen color-coding (iteration 13)**: rows tinted red-to-green based on accuracy weakness
-- **174 unit tests, 13 E2E tests, build clean, lint clean**
+- **Onboarding demo overhaul (iteration 14)**: spatial invaders with rAF movement, proximity-triggered "Watch out!" prompt
+- **Adaptive calibration wired (iteration 15)**: CalibrationTracker now used in useGameLoop during calibration mode, adjusts speed dynamically
+- **Calibration summary enhanced (iteration 16)**: shows overall accuracy, strongest keys, and weakest keys
+- **Storage wipe on parse error (iteration 17)**: corrupted localStorage now explicitly removed per spec
+- **176 unit tests, 13 E2E tests, build clean, lint clean**
 
 ### Now
 - Continuing Ralph Loop iterations
 
 ### Next
-- Onboarding demo overhaul (proximity prompt, actual invader movement)
-- Additional gameplay tuning
+- Additional gameplay tuning and polish
+- Dead code cleanup pass
 
 ## Open Questions
 - None

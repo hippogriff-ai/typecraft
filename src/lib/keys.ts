@@ -6,8 +6,6 @@ export const KEY_GROUPS = {
   pythonSymbols: ['(', ')', '[', ']', '{', '}', ':', '=', '_', '#', '@', '.', ','],
 } as const
 
-export type KeyGroupName = keyof typeof KEY_GROUPS
-
 export const ALL_KEYS: string[] = [
   ...new Set(Object.values(KEY_GROUPS).flat()),
 ]

@@ -3,10 +3,6 @@ export interface SessionRecord {
   wpm: number
 }
 
-export interface RoundRecord {
-  wpm: number
-}
-
 export function calculateWPM(opts: {
   charCount: number
   elapsedMs: number

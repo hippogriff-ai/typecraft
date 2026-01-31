@@ -32,6 +32,12 @@ export function RoundSummary(props: RoundSummaryProps) {
 
       <div data-testid="reaction-time">{props.avgReactionMs}ms</div>
 
+      {props.isNewHighScore && (
+        <div data-testid="new-high-score" className="new-high-score">
+          NEW HIGH SCORE: {props.roundScore}
+        </div>
+      )}
+
       {props.keysImproved && props.keysImproved.length > 0 && (
         <div data-testid="keys-improved">
           {props.keysImproved.join(' ')}

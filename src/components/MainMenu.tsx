@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 interface MainMenuProps {
   onStartGame: () => void
   onStats: () => void
@@ -6,6 +8,8 @@ interface MainMenuProps {
 }
 
 export function MainMenu(props: MainMenuProps) {
+  const [showRecalibrateConfirm, setShowRecalibrateConfirm] = useState(false)
+
   return (
     <div className="main-menu" data-testid="main-menu">
       <h1>TypeCraft</h1>
@@ -13,7 +17,17 @@ export function MainMenu(props: MainMenuProps) {
         <button onClick={props.onStartGame}>Start Game</button>
         <button onClick={props.onStats}>Stats</button>
         <button onClick={props.onSettings}>Settings</button>
-        <button onClick={props.onRecalibrate}>Recalibrate</button>
+        {!showRecalibrateConfirm ? (
+          <button onClick={() => setShowRecalibrateConfirm(true)}>Recalibrate</button>
+        ) : (
+          <div data-testid="recalibrate-confirm" className="confirm-dialog">
+            <p>Reset all key profiles and restart calibration?</p>
+            <button onClick={() => { props.onRecalibrate(); setShowRecalibrateConfirm(false) }}>
+              Confirm
+            </button>
+            <button onClick={() => setShowRecalibrateConfirm(false)}>Cancel</button>
+          </div>
+        )}
       </div>
     </div>
   )

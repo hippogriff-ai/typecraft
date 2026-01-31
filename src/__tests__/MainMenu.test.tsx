@@ -45,11 +45,31 @@ describe('MainMenu', () => {
     expect(onSettings).toHaveBeenCalledTimes(1)
   })
 
-  it('has a Recalibrate button that calls onRecalibrate', async () => {
+  /**
+   * Spec: "Recalibrate: confirmation dialog, then resets key profiles and restarts calibration"
+   * Clicking Recalibrate shows a confirmation dialog; only Confirm triggers the callback.
+   */
+  it('shows confirmation dialog before recalibrating', async () => {
     const onRecal = vi.fn()
     const user = userEvent.setup()
     render(<MainMenu {...defaultProps} onRecalibrate={onRecal} />)
+
     await user.click(screen.getByRole('button', { name: /recalibrate/i }))
+    expect(onRecal).not.toHaveBeenCalled()
+    expect(screen.getByTestId('recalibrate-confirm')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /confirm/i }))
     expect(onRecal).toHaveBeenCalledTimes(1)
+  })
+
+  it('can cancel recalibration', async () => {
+    const onRecal = vi.fn()
+    const user = userEvent.setup()
+    render(<MainMenu {...defaultProps} onRecalibrate={onRecal} />)
+
+    await user.click(screen.getByRole('button', { name: /recalibrate/i }))
+    await user.click(screen.getByRole('button', { name: /cancel/i }))
+    expect(onRecal).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('recalibrate-confirm')).not.toBeInTheDocument()
   })
 })

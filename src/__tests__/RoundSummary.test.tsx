@@ -39,6 +39,16 @@ describe('RoundSummary', () => {
     expect(next).toHaveTextContent('}')
   })
 
+  it('shows new high score indicator when isNewHighScore is true', () => {
+    render(<RoundSummary {...defaultProps} isNewHighScore={true} roundScore={50} />)
+    expect(screen.getByTestId('new-high-score')).toHaveTextContent('NEW HIGH SCORE')
+  })
+
+  it('does not show high score indicator when isNewHighScore is false', () => {
+    render(<RoundSummary {...defaultProps} isNewHighScore={false} />)
+    expect(screen.queryByTestId('new-high-score')).not.toBeInTheDocument()
+  })
+
   /**
    * Spec: "Round Outcome > Keys improved / Keys declined"
    * keysImproved shows keys that got better, keysDefined minus keysImproved = declined

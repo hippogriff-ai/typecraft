@@ -238,10 +238,14 @@
   font-weight: 700;
   color: #fff;
   text-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
-  background: rgba(50, 50, 80, 0.6);
-  border: 2px solid rgba(100, 100, 200, 0.5);
   border-radius: 4px;
   transform: translate(-50%, -50%);
+  position: relative;
+}
+
+.invader-char {
+  position: relative;
+  z-index: 2;
 }
 
 /* Round Summary */

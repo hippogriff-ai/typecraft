@@ -1,6 +1,7 @@
 import type { RoundState, Vec2 } from '../lib/game-engine'
 import type { AccuracyRing } from '../lib/accuracy-ring'
-import { getCharColor } from '../lib/sprites'
+import { getCharColor, SPRITE_TEMPLATES } from '../lib/sprites'
+import { SpriteRenderer } from './SpriteRenderer'
 
 export interface Explosion {
   id: number
@@ -103,6 +104,7 @@ export function GameBoard({ roundState, accuracyRing, boardSize, explosions, abs
           const invaderIdx = roundState.invaders.indexOf(inv)
 
           const charColor = getCharColor(inv.char)
+          const spriteTemplate = SPRITE_TEMPLATES[invaderIdx % SPRITE_TEMPLATES.length]
 
           return (
             <div
@@ -119,7 +121,13 @@ export function GameBoard({ roundState, accuracyRing, boardSize, explosions, abs
                 textShadow: `0 0 6px ${charColor.primary}`,
               }}
             >
-              {inv.char}
+              <SpriteRenderer
+                template={spriteTemplate}
+                primaryColor={charColor.primary}
+                secondaryColor={charColor.secondary}
+                size={36}
+              />
+              <span className="invader-char">{inv.char}</span>
             </div>
           )
         })}

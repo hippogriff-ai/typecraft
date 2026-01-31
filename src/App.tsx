@@ -40,6 +40,7 @@ function App() {
   const settings = gameState.settings as Settings
   const viewportSize = useViewportSize()
   const [paused, setPaused] = useState(false)
+  const [pauseAvgReactionMs, setPauseAvgReactionMs] = useState(0)
   const [roundEndResult, setRoundEndResult] = useState<'cleared' | 'grapes_lost' | null>(null)
   const [showRoundSummary, setShowRoundSummary] = useState(false)
   const [countdownValue, setCountdownValue] = useState<number | null>(null)
@@ -251,12 +252,18 @@ function App() {
       if (screen !== 'playing') return
 
       if (e.key === 'Escape') {
-        setPaused((p) => !p)
         if (!paused) {
+          const times = reactionTimesRef.current
+          setPauseAvgReactionMs(
+            times.length > 0
+              ? Math.round(times.reduce((s, t) => s + t, 0) / times.length)
+              : 0,
+          )
           gameLoop.stop()
         } else {
           gameLoop.start()
         }
+        setPaused((p) => !p)
         return
       }
 
@@ -384,9 +391,7 @@ function App() {
                     ? roundState.score / roundState.totalSpawned
                     : 0,
                   kills: roundState.score,
-                  avgReactionMs: reactionTimesRef.current.length > 0
-                    ? Math.round(reactionTimesRef.current.reduce((s, t) => s + t, 0) / reactionTimesRef.current.length)
-                    : 0,
+                  avgReactionMs: pauseAvgReactionMs,
                 }}
                 onResume={() => {
                   setPaused(false)

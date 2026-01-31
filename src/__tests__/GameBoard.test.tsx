@@ -52,6 +52,26 @@ describe('GameBoard', () => {
   })
 
   /**
+   * Spec: "A single SpriteRenderer component reads the array and renders CSS grid cells."
+   * Each invader should render a pixel-art sprite grid behind its character.
+   */
+  it('renders sprite grid within each invader', () => {
+    let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a'] })
+    const inv = createInvader({
+      char: 'a',
+      position: { x: 100, y: 200 },
+      center: { x: 400, y: 300 },
+      speed: 1,
+    })
+    state = { ...state, invaders: [inv] }
+
+    render(<GameBoard roundState={state} onKeyPress={vi.fn()} />)
+
+    const invaderEl = screen.getByTestId('invader-0')
+    expect(invaderEl.querySelector('[data-testid="sprite-grid"]')).toBeInTheDocument()
+  })
+
+  /**
    * Spec: "Grapes are connected by a thin stem/vine line (CSS) to give the cluster a natural bunch feel"
    */
   it('renders vine stem above grape cluster', () => {

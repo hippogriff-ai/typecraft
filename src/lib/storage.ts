@@ -77,9 +77,24 @@ export function clearCalibrationData(): void {
   const state = loadState()
   if (!state) return
 
+  // Spec: "Resets: accuracy, speed, and trend. Keeps: high score, total kills, round history."
+  // Preserve correctAttempts (total kills) per key while resetting accuracy/speed/trend.
+  const resetProfiles: Record<string, KeyProfile> = {}
+  for (const [key, profile] of Object.entries(state.keyProfiles)) {
+    resetProfiles[key] = {
+      key: profile.key,
+      totalAttempts: 0,
+      correctAttempts: profile.correctAttempts,
+      averageTimeMs: 0,
+      bestAccuracy: 0,
+      bestSpeedMs: 0,
+      history: [],
+    }
+  }
+
   saveState({
     ...state,
-    keyProfiles: {},
+    keyProfiles: resetProfiles,
     calibrationProgress: { completedGroups: [], complete: false },
     currentFocusKeys: [],
     mode: 'calibration',

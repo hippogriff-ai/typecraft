@@ -85,7 +85,10 @@ describe('clearCalibrationData', () => {
     const loaded = loadState()
     expect(loaded).not.toBeNull()
     expect(loaded!.mode).toBe('calibration')
-    expect(loaded!.keyProfiles).toEqual({})
+    // Key profiles are reset (accuracy/speed/history cleared) but keys still exist
+    expect(loaded!.keyProfiles['a'].totalAttempts).toBe(0)
+    expect(loaded!.keyProfiles['a'].averageTimeMs).toBe(0)
+    expect(loaded!.keyProfiles['a'].history).toEqual([])
     expect(loaded!.calibrationProgress).toEqual({ completedGroups: [], complete: false })
     expect(loaded!.currentFocusKeys).toEqual([])
     // Round history preserved
@@ -107,6 +110,42 @@ describe('clearCalibrationData', () => {
 
     const loaded = loadState()
     expect(loaded!.highScore).toBe(99)
+  })
+
+  /**
+   * Spec: "Recalibration Resets: accuracy, speed, and trend for all key profiles.
+   * Keeps: high score, total kills, round history (lifetime achievements preserved)"
+   * correctAttempts = total kills, so it must survive recalibration.
+   */
+  it('preserves total kills (correctAttempts) per key on recalibration', () => {
+    const profile = {
+      ...createKeyProfile('a'),
+      totalAttempts: 20,
+      correctAttempts: 15,
+      averageTimeMs: 250,
+      bestAccuracy: 0.9,
+      bestSpeedMs: 100,
+      history: [{ correct: true, timeMs: 200 }],
+    }
+    const state = makeState({
+      mode: 'practice',
+      keyProfiles: { a: profile },
+      calibrationProgress: { completedGroups: ['homeRow'], complete: true },
+    })
+    saveState(state)
+
+    clearCalibrationData()
+
+    const loaded = loadState()
+    expect(loaded!.keyProfiles['a']).toBeDefined()
+    // Total kills preserved
+    expect(loaded!.keyProfiles['a'].correctAttempts).toBe(15)
+    // Accuracy, speed, trend reset
+    expect(loaded!.keyProfiles['a'].totalAttempts).toBe(0)
+    expect(loaded!.keyProfiles['a'].averageTimeMs).toBe(0)
+    expect(loaded!.keyProfiles['a'].bestAccuracy).toBe(0)
+    expect(loaded!.keyProfiles['a'].bestSpeedMs).toBe(0)
+    expect(loaded!.keyProfiles['a'].history).toEqual([])
   })
 
   it('does nothing when no state exists', () => {

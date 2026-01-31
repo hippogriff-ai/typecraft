@@ -15,7 +15,7 @@ export function MainMenu(props: MainMenuProps) {
       <h1>TypeCraft</h1>
       <div className="menu-buttons">
         <button onClick={props.onStartGame}>Start Game</button>
-        <button onClick={props.onStats}>Stats</button>
+        <button onClick={props.onStats}>Stats/Leaderboard</button>
         <button onClick={props.onSettings}>Settings</button>
         {!showRecalibrateConfirm ? (
           <button onClick={() => setShowRecalibrateConfirm(true)}>Recalibrate</button>

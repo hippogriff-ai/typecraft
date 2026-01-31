@@ -13,6 +13,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@amplitude/analytics-browser": "^2.34.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

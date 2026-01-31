@@ -1,4 +1,13 @@
+import { ALL_KEYS } from './keys'
 import { selectWordsForFocus } from './word-list'
+
+/**
+ * Collision radius in pixels. Matches the grape cluster's visual bounding radius (~60px
+ * from center, based on .grape-cluster width: 120px). Per spec: "an invader is absorbed
+ * when it enters a fixed radius around the screen center (the cluster's visual bounding
+ * radius + small margin). This radius stays constant regardless of how many grapes remain."
+ */
+export const CLUSTER_COLLISION_RADIUS = 60
 
 export interface Vec2 {
   x: number
@@ -6,12 +15,16 @@ export interface Vec2 {
 }
 
 export interface Invader {
+  id: number
   char: string
   position: Vec2
   velocity: Vec2
   alive: boolean
   spawnTime: number
+  spriteIndex: number
 }
+
+let nextInvaderId = 0
 
 export interface PendingInvader {
   char: string
@@ -30,6 +43,7 @@ export interface RoundState {
   currentWave: number
   totalWaves: number
   focusKeys: string[]
+  fillerKeys?: string[]
   roundOver: boolean
   roundResult?: 'cleared' | 'grapes_lost'
   score: number
@@ -61,11 +75,13 @@ export function createInvader(opts: {
   const velocity = normalize(direction, opts.speed)
 
   return {
+    id: nextInvaderId++,
     char: opts.char,
     position: { ...opts.position },
     velocity,
     alive: true,
     spawnTime: opts.spawnTime ?? 0,
+    spriteIndex: Math.floor(Math.random() * 10),
   }
 }
 
@@ -73,6 +89,7 @@ export function createRoundState(opts: {
   grapeCount: number
   totalWaves: number
   focusKeys: string[]
+  fillerKeys?: string[]
   maxInvadersPerWave?: number
 }): RoundState {
   return {
@@ -84,6 +101,7 @@ export function createRoundState(opts: {
     currentWave: 0,
     totalWaves: opts.totalWaves,
     focusKeys: opts.focusKeys,
+    fillerKeys: opts.fillerKeys,
     roundOver: false,
     score: 0,
     totalSpawned: 0,
@@ -119,32 +137,48 @@ export function spawnWave(
   const rawCount = 2 + nextWave // spec: 3+N where N starts at 0, so wave 1 = 3, wave 2 = 4, etc.
   const count = Math.min(rawCount, state.maxInvadersPerWave)
 
-  const words = selectWordsForFocus({ focusKeys: state.focusKeys, count: Math.ceil(count / 3) })
+  // Defensive: if focusKeys is empty (corrupted state), fall back to home row
+  const focusKeys = state.focusKeys.length > 0 ? state.focusKeys : ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l']
+
+  // Spec: Practice mode uses 70% focus / 30% filler. Calibration uses 100% focus.
+  // When fillerKeys is undefined or has entries, use 70/30 split.
+  // When fillerKeys is explicitly empty [], use 100% focus (calibration mode).
+  const hasFiller = !state.fillerKeys || state.fillerKeys.length > 0
+  const focusCount = hasFiller ? Math.round(count * 0.7) : count
+  const fillerCount = count - focusCount
+
+  // Generate focus characters from words containing focus keys, keeping only
+  // the actual focus chars to guarantee the ratio
+  const words = selectWordsForFocus({ focusKeys, count: Math.ceil(focusCount / 3) })
 
   const chars: { char: string; batchOrigin: Vec2 }[] = []
   for (const word of words) {
     const origin = randomEdgePosition(opts.boardWidth, opts.boardHeight)
     for (const ch of word) {
-      chars.push({ char: ch, batchOrigin: origin })
+      if (focusKeys.includes(ch) && chars.length < focusCount) {
+        chars.push({ char: ch, batchOrigin: origin })
+      }
     }
   }
 
-  // Trim or pad to exact count, preferring to keep focus characters
-  while (chars.length > count) {
-    let removed = false
-    for (let i = chars.length - 1; i >= 0; i--) {
-      if (!state.focusKeys.includes(chars[i].char)) {
-        chars.splice(i, 1)
-        removed = true
-        break
-      }
-    }
-    if (!removed) chars.pop()
-  }
-  while (chars.length < count) {
-    const char = state.focusKeys[Math.floor(Math.random() * state.focusKeys.length)]
+  // Pad to focusCount if words didn't yield enough focus chars
+  while (chars.length < focusCount) {
+    const char = focusKeys[Math.floor(Math.random() * focusKeys.length)]
     const origin = randomEdgePosition(opts.boardWidth, opts.boardHeight)
     chars.push({ char, batchOrigin: origin })
+  }
+
+  // Add filler characters when applicable (practice mode)
+  if (fillerCount > 0) {
+    const fillerPool = (state.fillerKeys && state.fillerKeys.length > 0)
+      ? state.fillerKeys
+      : ALL_KEYS.filter((k) => !focusKeys.includes(k))
+    for (let i = 0; i < fillerCount; i++) {
+      const pool = fillerPool.length > 0 ? fillerPool : focusKeys
+      const char = pool[Math.floor(Math.random() * pool.length)]
+      const origin = randomEdgePosition(opts.boardWidth, opts.boardHeight)
+      chars.push({ char, batchOrigin: origin })
+    }
   }
 
   // Split into batches of ~3 characters, staggered 1-2s apart
@@ -305,6 +339,34 @@ export function handleKeyPress(
     reactionTimeMs,
     destroyedPosition: { ...nearest.inv.position },
   }
+}
+
+export function rescaleInvaderSpeeds(
+  state: RoundState,
+  newBaseSpeed: number,
+): RoundState {
+  const escalation = (state.currentWave - 1) * 5
+  const newEffective = newBaseSpeed + escalation
+
+  const invaders = state.invaders.map((inv) => {
+    if (!inv.alive) return inv
+    const mag = Math.sqrt(inv.velocity.x ** 2 + inv.velocity.y ** 2)
+    if (mag === 0) return inv
+    return {
+      ...inv,
+      velocity: {
+        x: (inv.velocity.x / mag) * newEffective,
+        y: (inv.velocity.y / mag) * newEffective,
+      },
+    }
+  })
+
+  const pendingSpawns = state.pendingSpawns.map((p) => ({
+    ...p,
+    speed: newEffective,
+  }))
+
+  return { ...state, invaders, pendingSpawns }
 }
 
 export function checkRoundComplete(state: RoundState): RoundState {

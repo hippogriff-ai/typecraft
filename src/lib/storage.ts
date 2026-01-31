@@ -1,4 +1,6 @@
 import type { KeyProfile } from './scoring'
+import { validateSettings } from './settings'
+import type { Settings } from './settings'
 
 const STORAGE_KEY = 'typecraft'
 const SCHEMA_VERSION = 1
@@ -23,15 +25,13 @@ export interface AppState {
   roundHistory: RoundHistoryEntry[]
   calibrationProgress: CalibrationProgress
   currentFocusKeys: string[]
+  currentFillerKeys?: string[]
+  calibrationOrder?: string[]
   mode: 'calibration' | 'practice'
   highScore?: number
-  settings?: {
-    grapeCount: number
-    speedPreset: string
-    maxInvadersPerWave: number
-    wavesPerRound: number
-    colorBlindMode?: string
-  }
+  totalRounds?: number
+  totalPlayTimeMs?: number
+  settings?: Settings
 }
 
 interface StoredData extends AppState {
@@ -53,7 +53,7 @@ export function loadState(): AppState | null {
   try {
     const data: StoredData = JSON.parse(raw)
 
-    if (data.schemaVersion !== undefined && data.schemaVersion !== SCHEMA_VERSION) {
+    if (data.schemaVersion !== SCHEMA_VERSION) {
       localStorage.removeItem(STORAGE_KEY)
       dataWiped = true
       return null
@@ -61,9 +61,13 @@ export function loadState(): AppState | null {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { schemaVersion: _, ...state } = data
+    if (state.settings) {
+      state.settings = validateSettings(state.settings as Settings)
+    }
     return state
   } catch {
     localStorage.removeItem(STORAGE_KEY)
+    dataWiped = true
     return null
   }
 }
@@ -78,8 +82,9 @@ export function clearCalibrationData(): void {
   const state = loadState()
   if (!state) return
 
-  // Spec: "Resets: accuracy, speed, and trend. Keeps: high score, total kills, round history."
-  // Preserve correctAttempts (total kills) per key while resetting accuracy/speed/trend.
+  // Spec: "Resets: accuracy, speed, and trend. Keeps: high score, total kills, round history
+  // (lifetime achievements preserved)." Personal bests (bestAccuracy, bestSpeedMs) and
+  // lifetimeKills are lifetime achievements and survive recalibration.
   const resetProfiles: Record<string, KeyProfile> = {}
   for (const [key, profile] of Object.entries(state.keyProfiles)) {
     resetProfiles[key] = {
@@ -88,8 +93,8 @@ export function clearCalibrationData(): void {
       correctAttempts: 0,
       lifetimeKills: profile.lifetimeKills ?? 0,
       averageTimeMs: 0,
-      bestAccuracy: 0,
-      bestSpeedMs: 0,
+      bestAccuracy: profile.bestAccuracy ?? 0,
+      bestSpeedMs: profile.bestSpeedMs ?? 0,
       history: [],
     }
   }
@@ -99,6 +104,8 @@ export function clearCalibrationData(): void {
     keyProfiles: resetProfiles,
     calibrationProgress: { completedGroups: [], complete: false },
     currentFocusKeys: [],
+    currentFillerKeys: [],
+    calibrationOrder: undefined,
     mode: 'calibration',
   })
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { saveState, loadState, clearCalibrationData, wasDataWiped, type AppState } from '../lib/storage'
 import { createKeyProfile } from '../lib/scoring'
+import type { Settings } from '../lib/settings'
 
 beforeEach(() => {
   localStorage.clear()
@@ -38,6 +39,18 @@ describe('saveState / loadState', () => {
     expect(loadState()).toBeNull()
     expect(localStorage.getItem('typecraft')).toBeNull()
   })
+
+  /**
+   * JSON data without a schemaVersion field should be treated as a version mismatch
+   * and wiped. Without this guard, manually-edited or externally-written localStorage
+   * data missing required fields (roundHistory, calibrationProgress, etc.) would load
+   * and crash the app when accessing .map() or .completedGroups on undefined.
+   */
+  it('returns null and wipes storage when schemaVersion is absent', () => {
+    localStorage.setItem('typecraft', JSON.stringify({ keyProfiles: {} }))
+    expect(loadState()).toBeNull()
+    expect(localStorage.getItem('typecraft')).toBeNull()
+  })
 })
 
 describe('wasDataWiped', () => {
@@ -68,6 +81,121 @@ describe('wasDataWiped', () => {
     loadState()
     wasDataWiped() // consume
     expect(wasDataWiped()).toBe(false) // second call returns false
+  })
+
+  /**
+   * Data without schemaVersion is treated as corrupted — must show notice.
+   */
+  it('returns true after missing schemaVersion wipe', () => {
+    localStorage.setItem('typecraft', JSON.stringify({ keyProfiles: {} }))
+    loadState()
+    expect(wasDataWiped()).toBe(true)
+  })
+
+  /**
+   * Spec: "On version mismatch or JSON parse error: wipe all data and restart
+   * calibration. Show a brief notice." The notice must appear for BOTH
+   * schema-mismatch AND JSON parse errors, not just schema mismatch.
+   */
+  it('returns true after JSON parse error wipe', () => {
+    localStorage.setItem('typecraft', 'corrupted{{{not-json')
+    loadState() // triggers catch block wipe
+    expect(wasDataWiped()).toBe(true)
+  })
+})
+
+/**
+ * Settings loaded from localStorage must be validated/clamped to prevent
+ * corrupted or manually-edited values from causing game logic errors.
+ * Without validation, out-of-range values (grapeCount > 48, negative
+ * wavesPerRound, etc.) could reach createRoundState and spawnWave.
+ */
+describe('loadState — settings validation', () => {
+  it('clamps out-of-range settings when loading from localStorage', () => {
+    const state = makeState({
+      settings: {
+        grapeCount: 999,
+        speedPreset: 'normal',
+        maxInvadersPerWave: 999,
+        wavesPerRound: 999,
+        colorBlindMode: 'none',
+      },
+    })
+    saveState(state)
+
+    const loaded = loadState()
+    expect(loaded!.settings!.grapeCount).toBe(48)
+    expect(loaded!.settings!.maxInvadersPerWave).toBe(20)
+    expect(loaded!.settings!.wavesPerRound).toBe(12)
+  })
+
+  it('corrects invalid speed preset to normal', () => {
+    const state = makeState({
+      settings: {
+        grapeCount: 24,
+        speedPreset: 'turbo' as Settings['speedPreset'],
+        maxInvadersPerWave: 12,
+        wavesPerRound: 8,
+        colorBlindMode: 'none',
+      },
+    })
+    saveState(state)
+
+    const loaded = loadState()
+    expect(loaded!.settings!.speedPreset).toBe('normal')
+  })
+
+  /**
+   * Old localStorage data saved before color-blind mode was added will lack the
+   * colorBlindMode field. validateSettings must default it to 'none' so the app
+   * doesn't crash or pass undefined to color palette functions.
+   */
+  it('defaults missing colorBlindMode to none for old saved data', () => {
+    // Simulate old localStorage data that predates the colorBlindMode feature
+    const oldData = {
+      schemaVersion: 1,
+      keyProfiles: {},
+      roundHistory: [],
+      calibrationProgress: { completedGroups: [], complete: false },
+      currentFocusKeys: [],
+      mode: 'calibration',
+      settings: {
+        grapeCount: 24,
+        speedPreset: 'normal',
+        maxInvadersPerWave: 12,
+        wavesPerRound: 8,
+        // colorBlindMode intentionally omitted
+      },
+    }
+    localStorage.setItem('typecraft', JSON.stringify(oldData))
+
+    const loaded = loadState()
+    expect(loaded).not.toBeNull()
+    expect(loaded!.settings!.colorBlindMode).toBe('none')
+    expect(loaded!.settings!.speedPreset).toBe('normal')
+    expect(loaded!.settings!.grapeCount).toBe(24)
+  })
+})
+
+/**
+ * Spec: "Session-level stats (total rounds, total time)" under Stored Data.
+ * These lifetime metrics must be persisted across sessions.
+ */
+describe('session-level stats persistence', () => {
+  it('round-trips totalRounds and totalPlayTimeMs through localStorage', () => {
+    const state = makeState({ totalRounds: 42, totalPlayTimeMs: 360000 })
+    saveState(state)
+    const loaded = loadState()
+    expect(loaded!.totalRounds).toBe(42)
+    expect(loaded!.totalPlayTimeMs).toBe(360000)
+  })
+
+  it('defaults to 0 when fields are missing (backward compat)', () => {
+    const state = makeState()
+    saveState(state)
+    const loaded = loadState()
+    expect(loaded!.totalRounds ?? 0).toBe(0)
+    expect(loaded!.totalPlayTimeMs ?? 0).toBe(0)
   })
 })
 
@@ -147,9 +275,29 @@ describe('clearCalibrationData', () => {
     // Accuracy, speed, trend reset
     expect(loaded!.keyProfiles['a'].totalAttempts).toBe(0)
     expect(loaded!.keyProfiles['a'].averageTimeMs).toBe(0)
-    expect(loaded!.keyProfiles['a'].bestAccuracy).toBe(0)
-    expect(loaded!.keyProfiles['a'].bestSpeedMs).toBe(0)
     expect(loaded!.keyProfiles['a'].history).toEqual([])
+    // Personal bests are lifetime achievements — preserved per spec
+    expect(loaded!.keyProfiles['a'].bestAccuracy).toBe(0.9)
+    expect(loaded!.keyProfiles['a'].bestSpeedMs).toBe(100)
+  })
+
+  /**
+   * Bug: clearCalibrationData didn't clear currentFillerKeys, so old practice-mode
+   * filler keys (ranked 6-10) leaked into calibration rounds, contaminating the
+   * 70/30 split with non-focus characters during calibration.
+   */
+  it('clears currentFillerKeys on recalibration', () => {
+    const state = makeState({
+      mode: 'practice',
+      currentFillerKeys: ['x', 'c', 'v', 'b', 'n'],
+      calibrationProgress: { completedGroups: ['homeRow'], complete: true },
+    })
+    saveState(state)
+
+    clearCalibrationData()
+
+    const loaded = loadState()
+    expect(loaded!.currentFillerKeys).toEqual([])
   })
 
   it('does nothing when no state exists', () => {

@@ -19,9 +19,12 @@ export function PauseMenu({ roundStats, onResume, onSettings, onQuit }: PauseMen
       <h2>PAUSED</h2>
 
       <div className="pause-stats">
-        <div>Accuracy: {Math.round(roundStats.accuracy * 100)}%</div>
-        <div>Kills: {roundStats.kills}</div>
-        <div>Avg Reaction: {roundStats.avgReactionMs}ms</div>
+        <h3>Current Round Stats</h3>
+        <div className="pause-stats-row">
+          <div>Accuracy: {Math.round(roundStats.accuracy * 100)}%</div>
+          <div>Kills: {roundStats.kills}</div>
+          <div>Avg Reaction: {roundStats.avgReactionMs}ms</div>
+        </div>
       </div>
 
       {!showConfirm ? (

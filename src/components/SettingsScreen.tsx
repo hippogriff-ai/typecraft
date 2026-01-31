@@ -18,6 +18,7 @@ export function SettingsScreen({ settings, onUpdate, onBack }: SettingsScreenPro
           min={6}
           max={48}
           value={settings.grapeCount}
+          aria-label={`Grapes: ${settings.grapeCount}`}
           onChange={(e) =>
             onUpdate({ ...settings, grapeCount: Number(e.target.value) })
           }
@@ -55,6 +56,7 @@ export function SettingsScreen({ settings, onUpdate, onBack }: SettingsScreenPro
           min={6}
           max={20}
           value={settings.maxInvadersPerWave}
+          aria-label={`Max Invaders per Wave: ${settings.maxInvadersPerWave}`}
           onChange={(e) =>
             onUpdate({ ...settings, maxInvadersPerWave: Number(e.target.value) })
           }
@@ -68,6 +70,7 @@ export function SettingsScreen({ settings, onUpdate, onBack }: SettingsScreenPro
           min={4}
           max={12}
           value={settings.wavesPerRound}
+          aria-label={`Waves per Round: ${settings.wavesPerRound}`}
           onChange={(e) =>
             onUpdate({ ...settings, wavesPerRound: Number(e.target.value) })
           }

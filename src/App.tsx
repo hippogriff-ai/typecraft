@@ -9,7 +9,8 @@ import { SPEED_PRESETS } from './lib/settings'
 import { calculateWPM } from './lib/stats'
 import { computeTrend } from './lib/scoring'
 import { getCharColor } from './lib/sprites'
-import type { Settings } from './lib/settings'
+import { initAnalytics, trackEvent } from './lib/analytics'
+import { ALL_KEYS } from './lib/keys'
 import { GameBoard } from './components/GameBoard'
 import type { Explosion, AbsorbEffect, GrapeBurst } from './components/GameBoard'
 import { HUD } from './components/HUD'
@@ -27,7 +28,7 @@ function useViewportSize() {
   const [size, setSize] = useState(() => ({ width: window.innerWidth || 800, height: window.innerHeight || 600 }))
   useEffect(() => {
     const handleResize = () => {
-      setSize({ width: window.innerWidth, height: window.innerHeight })
+      setSize({ width: window.innerWidth || 800, height: window.innerHeight || 600 })
     }
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
@@ -37,11 +38,19 @@ function useViewportSize() {
 
 function App() {
   const gameState = useGameState()
-  const settings = gameState.settings as Settings
+  const settings = gameState.settings
   const viewportSize = useViewportSize()
+
+  // Initialize analytics once on mount
+  useEffect(() => { initAnalytics() }, [])
+
+  // Track screen views
+  useEffect(() => { trackEvent('screen_viewed', { screen: gameState.screen }) }, [gameState.screen])
   const [paused, setPaused] = useState(false)
   const [pauseAvgReactionMs, setPauseAvgReactionMs] = useState(0)
   const [roundEndResult, setRoundEndResult] = useState<'cleared' | 'grapes_lost' | null>(null)
+  const [settingsSource, setSettingsSource] = useState<'hud' | 'pause' | null>(null)
+  const [showRecalConfirm, setShowRecalConfirm] = useState(false)
   const [showRoundSummary, setShowRoundSummary] = useState(false)
   const [countdownValue, setCountdownValue] = useState<number | null>(null)
   const [lastRoundStats, setLastRoundStats] = useState({
@@ -50,10 +59,12 @@ function App() {
     avgReactionMs: 0,
     roundScore: 0,
     wpm: 0,
+    roundDurationMs: 0,
     keysImproved: [] as string[],
-    keysDefined: [] as string[],
+    keysDeclined: [] as string[],
   })
 
+  const [liveWpm, setLiveWpm] = useState(0)
   const [accuracyRing, setAccuracyRing] = useState<AccuracyRing>(() => createAccuracyRing())
   const [explosions, setExplosions] = useState<Explosion[]>([])
   const [absorbs, setAbsorbs] = useState<AbsorbEffect[]>([])
@@ -67,28 +78,39 @@ function App() {
   const reactionTimesRef = useRef<number[]>([])
   const roundStartAccuracyRef = useRef<Record<string, number>>({})
 
+  // Ref to gameLoop.resetState — bridges the definition order gap
+  // (startNewRound is defined before gameLoop, but needs to sync state to it)
+  const gameLoopResetRef = useRef<((state: RoundState) => void) | null>(null)
+
   const [roundState, setRoundState] = useState<RoundState>(() =>
     createRoundState({
       grapeCount: settings.grapeCount ?? 24,
       totalWaves: settings.wavesPerRound ?? 8,
       focusKeys: gameState.focusKeys.length > 0 ? gameState.focusKeys : ['a', 's', 'd', 'f'],
+      fillerKeys: gameState.fillerKeys,
+      maxInvadersPerWave: settings.maxInvadersPerWave ?? 12,
     }),
   )
 
   const startNewRound = useCallback(() => {
     const focusKeys = gameState.focusKeys.length > 0 ? gameState.focusKeys : ['a', 's', 'd', 'f']
-    setRoundState(
-      createRoundState({
-        grapeCount: settings.grapeCount ?? 24,
-        totalWaves: settings.wavesPerRound ?? 8,
-        focusKeys,
-      }),
-    )
+    const newRoundState = createRoundState({
+      grapeCount: settings.grapeCount ?? 24,
+      totalWaves: settings.wavesPerRound ?? 8,
+      focusKeys,
+      fillerKeys: gameState.fillerKeys,
+      maxInvadersPerWave: settings.maxInvadersPerWave ?? 12,
+    })
+    setRoundState(newRoundState)
+    // Sync to game loop immediately — bypasses React's async batching so the
+    // first rAF tick sees the correct focusKeys (fixes calibration race condition)
+    gameLoopResetRef.current?.(newRoundState)
     setRoundEndResult(null)
     setShowRoundSummary(false)
     setAccuracyRing(createAccuracyRing())
     roundStartTimeRef.current = Date.now()
     reactionTimesRef.current = []
+    setLiveWpm(0)
     // Snapshot accuracy for each focus key at round start
     const snapshot: Record<string, number> = {}
     for (const k of focusKeys) {
@@ -96,7 +118,16 @@ function App() {
       snapshot[k] = p && p.totalAttempts > 0 ? p.correctAttempts / p.totalAttempts : 0
     }
     roundStartAccuracyRef.current = snapshot
-  }, [gameState.focusKeys, gameState.keyProfiles, settings])
+  }, [gameState.focusKeys, gameState.fillerKeys, gameState.keyProfiles, settings])
+
+  const handleCloseInGameSettings = useCallback(() => {
+    const fromHud = settingsSource === 'hud'
+    setSettingsSource(null)
+    if (fromHud) {
+      setPaused(false)
+      // Game loop restarts via the auto-start effect when paused becomes false
+    }
+  }, [settingsSource])
 
   const handleCollisions = useCallback((events: import('./lib/game-engine').CollisionEvent[]) => {
     const now = Date.now()
@@ -112,12 +143,15 @@ function App() {
 
   const handleRoundEnd = useCallback(
     (state: RoundState) => {
-      const totalChars = state.totalSpawned
       const kills = state.score
-      const accuracy = totalChars > 0 ? kills / totalChars : 0
+      // Use only invaders that actually appeared on screen, not pending ones
+      // that were scheduled but never spawned (round can end while invaders
+      // are still in the staggered spawn queue)
+      const appearedCount = state.totalSpawned - state.pendingSpawns.length
+      const accuracy = appearedCount > 0 ? kills / appearedCount : 0
 
       const elapsedMs = Date.now() - roundStartTimeRef.current
-      const wpm = calculateWPM({ charCount: totalChars, elapsedMs, accuracy })
+      const wpm = calculateWPM({ charCount: appearedCount, elapsedMs, accuracy })
 
       const reactions = reactionTimesRef.current
       const avgReactionMs = reactions.length > 0
@@ -126,15 +160,16 @@ function App() {
 
       // Compute keys improved/declined by comparing current accuracy to round-start snapshot
       const snapshot = roundStartAccuracyRef.current
-      const keysDefined: string[] = []
       const keysImproved: string[] = []
+      const keysDeclined: string[] = []
       for (const k of Object.keys(snapshot)) {
         const p = gameState.keyProfiles[k]
         if (!p || p.totalAttempts === 0) continue
-        keysDefined.push(k)
         const currentAcc = p.correctAttempts / p.totalAttempts
         if (currentAcc > snapshot[k]) {
           keysImproved.push(k)
+        } else if (currentAcc < snapshot[k]) {
+          keysDeclined.push(k)
         }
       }
 
@@ -144,8 +179,15 @@ function App() {
         avgReactionMs,
         roundScore: kills,
         wpm,
+        roundDurationMs: elapsedMs,
         keysImproved,
-        keysDefined,
+        keysDeclined,
+      })
+
+      trackEvent('round_ended', {
+        result: state.roundResult ?? 'cleared',
+        score: kills,
+        grapes: state.grapes,
       })
 
       setRoundEndResult(state.roundResult ?? 'cleared')
@@ -159,12 +201,20 @@ function App() {
   }, [])
 
   const handleNextRound = useCallback(() => {
+    trackEvent('round_completed', {
+      mode: gameState.mode,
+      accuracy: lastRoundStats.accuracy,
+      wpm: lastRoundStats.wpm,
+      grapes_left: lastRoundStats.grapesLeft,
+      round_duration_ms: lastRoundStats.roundDurationMs,
+    })
     gameState.completeRound({
       grapesLeft: lastRoundStats.grapesLeft,
       accuracy: lastRoundStats.accuracy,
       avgReactionMs: lastRoundStats.avgReactionMs,
       roundScore: lastRoundStats.roundScore,
       wpm: lastRoundStats.wpm,
+      roundDurationMs: lastRoundStats.roundDurationMs,
     })
     setShowRoundSummary(false)
     setCountdownValue(3)
@@ -173,6 +223,12 @@ function App() {
   const countdownRef = useRef<number>(0)
   useEffect(() => {
     if (countdownValue === null) return
+    // Cancel countdown if screen transitioned away from playing
+    // (e.g., last calibration round → calibration-summary)
+    if (gameState.screen !== 'playing') {
+      setCountdownValue(null) // eslint-disable-line react-hooks/set-state-in-effect
+      return
+    }
     if (countdownValue <= 0) {
       countdownRef.current = window.setTimeout(() => {
         setCountdownValue(null)
@@ -182,7 +238,7 @@ function App() {
     }
     const timer = setTimeout(() => setCountdownValue((v) => (v !== null ? v - 1 : null)), 1000)
     return () => clearTimeout(timer)
-  }, [countdownValue, startNewRound])
+  }, [countdownValue, startNewRound, gameState.screen])
 
   // Cleanup explosions after 300ms
   useEffect(() => {
@@ -216,9 +272,15 @@ function App() {
 
   const handleStateChange = useCallback((state: RoundState) => {
     setRoundState(state)
+    // Compute live WPM from current round data
+    const appearedCount = state.totalSpawned - state.pendingSpawns.length
+    const kills = state.score
+    const accuracy = appearedCount > 0 ? kills / appearedCount : 0
+    const elapsedMs = Date.now() - roundStartTimeRef.current
+    setLiveWpm(calculateWPM({ charCount: appearedCount, elapsedMs, accuracy }))
   }, [])
 
-  const baseSpeed = SPEED_PRESETS[(settings.speedPreset as keyof typeof SPEED_PRESETS) ?? 'normal'] ?? 50
+  const baseSpeed = SPEED_PRESETS[settings.speedPreset] ?? 50
 
   const gameLoop = useGameLoop({
     roundState,
@@ -229,6 +291,10 @@ function App() {
     baseSpeed,
     calibrationMode: gameState.mode === 'calibration',
   })
+
+  useEffect(() => {
+    gameLoopResetRef.current = gameLoop.resetState
+  }, [gameLoop.resetState])
 
   const prevScreenRef = useRef(gameState.screen)
   useEffect(() => {
@@ -252,6 +318,17 @@ function App() {
       if (screen !== 'playing') return
 
       if (e.key === 'Escape') {
+        // Ignore Escape during transition screens (round-end, countdown, round summary)
+        if (roundEndResult || countdownValue !== null || showRoundSummary) return
+        if (showRecalConfirm) {
+          setShowRecalConfirm(false)
+          setPaused(false)
+          return
+        }
+        if (settingsSource !== null) {
+          handleCloseInGameSettings()
+          return
+        }
         if (!paused) {
           const times = reactionTimesRef.current
           setPauseAvgReactionMs(
@@ -268,28 +345,34 @@ function App() {
       }
 
       if (!paused && !roundEndResult && !showRoundSummary && countdownValue === null) {
-        const result = gameLoop.handleKeyPress(e.key)
+        // Ignore modifier keys, function keys, arrow keys, etc. — only single printable characters
+        if (e.key.length !== 1) return
+        const key = e.key.toLowerCase()
+        // Only process keys that have invader characters (Space, backtick, etc. are not in KEY_GROUPS)
+        if (!ALL_KEYS.includes(key)) return
+
+        const result = gameLoop.handleKeyPress(key)
         if (result.hit && result.reactionTimeMs !== undefined) {
-          recordKeyResult(e.key, true, result.reactionTimeMs)
+          recordKeyResult(key, true, result.reactionTimeMs)
           reactionTimesRef.current.push(result.reactionTimeMs)
         } else {
-          recordKeyResult(e.key, false, 0)
+          recordKeyResult(key, false, 0)
         }
         setAccuracyRing((ring) => (result.hit ? recordHit(ring) : recordMiss(ring)))
         if (result.hit && result.destroyedPosition) {
           const id = explosionIdRef.current++
-          const color = getCharColor(e.key).primary
+          const color = getCharColor(key, settings.colorBlindMode).primary
           setExplosions((prev) => [...prev, { id, x: result.destroyedPosition!.x, y: result.destroyedPosition!.y, color, createdAt: Date.now() }])
         }
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [screen, recordKeyResult, paused, roundEndResult, showRoundSummary, countdownValue, gameLoop])
+  }, [screen, recordKeyResult, paused, roundEndResult, showRoundSummary, countdownValue, gameLoop, settingsSource, handleCloseInGameSettings, showRecalConfirm, settings.colorBlindMode])
 
   const roundName =
     gameState.mode === 'calibration'
-      ? 'Calibration'
+      ? `Calibration: ${gameState.calibrationRoundName ?? 'Unknown'}`
       : `Practice: ${gameState.focusKeys.join(' ')}`
 
   const keyStats = Object.values(gameState.keyProfiles).map((p) => ({
@@ -325,10 +408,10 @@ function App() {
         )
 
       case 'demo':
-        return <OnboardingDemo onComplete={gameState.completeDemo} />
+        return <OnboardingDemo onComplete={gameState.completeDemo} boardSize={viewportSize} />
 
       case 'stats':
-        return <StatsScreen keyStats={keyStats} onBack={gameState.goToMenu} />
+        return <StatsScreen keyStats={keyStats} onBack={gameState.goToMenu} totalRounds={gameState.totalRounds} totalPlayTimeMs={gameState.totalPlayTimeMs} />
 
       case 'settings':
         return (
@@ -369,8 +452,8 @@ function App() {
         return (
           <>
             <HUD
-              wpm={gameState.currentWPM}
-              learningSpeed={gameState.learningSpeed === 0 && gameState.roundHistory.length < 10 ? null : gameState.learningSpeed}
+              wpm={liveWpm}
+              learningSpeed={gameState.roundHistory.length < 10 ? null : gameState.learningSpeed}
               weakKeys={gameState.weakKeys}
               roundName={roundName}
               currentWave={roundState.currentWave}
@@ -379,16 +462,24 @@ function App() {
               maxGrapes={roundState.maxGrapes}
               roundScore={roundState.score}
               highScore={gameState.highScore}
-              onRecalibrate={gameState.recalibrate}
-              onOpenSettings={gameState.goToSettings}
+              onRecalibrate={() => {
+                gameLoop.stop()
+                setPaused(true)
+                setShowRecalConfirm(true)
+              }}
+              onOpenSettings={() => {
+                gameLoop.stop()
+                setPaused(true)
+                setSettingsSource('hud')
+              }}
             />
-            <GameBoard roundState={roundState} accuracyRing={accuracyRing} boardSize={viewportSize} explosions={explosions} absorbs={absorbs} grapeBursts={grapeBursts} colorBlindMode={settings.colorBlindMode} onKeyPress={gameLoop.handleKeyPress} />
+            <GameBoard roundState={roundState} accuracyRing={accuracyRing} boardSize={viewportSize} explosions={explosions} absorbs={absorbs} grapeBursts={grapeBursts} colorBlindMode={settings.colorBlindMode} />
 
             {paused && (
               <PauseMenu
                 roundStats={{
-                  accuracy: roundState.totalSpawned > 0
-                    ? roundState.score / roundState.totalSpawned
+                  accuracy: (roundState.totalSpawned - roundState.pendingSpawns.length) > 0
+                    ? roundState.score / (roundState.totalSpawned - roundState.pendingSpawns.length)
                     : 0,
                   kills: roundState.score,
                   avgReactionMs: pauseAvgReactionMs,
@@ -397,13 +488,50 @@ function App() {
                   setPaused(false)
                   gameLoop.start()
                 }}
-                onSettings={gameState.goToSettings}
+                onSettings={() => setSettingsSource('pause')}
                 onQuit={() => {
+                  trackEvent('round_abandoned', {
+                    mode: gameState.mode,
+                    wave: roundState.currentWave,
+                    total_waves: roundState.totalWaves,
+                  })
                   setPaused(false)
                   gameLoop.stop()
-                  gameState.goToMenu()
+                  gameState.quitRound()
                 }}
               />
+            )}
+
+            {settingsSource !== null && (
+              <div className="in-game-settings-overlay">
+                <SettingsScreen
+                  settings={settings}
+                  onUpdate={gameState.updateSettings}
+                  onBack={handleCloseInGameSettings}
+                />
+              </div>
+            )}
+
+            {showRecalConfirm && (
+              <div data-testid="recalibrate-confirm-overlay" className="in-game-settings-overlay">
+                <div className="confirm-dialog" style={{ textAlign: 'center', padding: '2rem' }}>
+                  <h3>Recalibrate?</h3>
+                  <p>Reset all key profiles and restart calibration?</p>
+                  <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>Round progress will be lost.</p>
+                  <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
+                    <button onClick={() => {
+                      setShowRecalConfirm(false)
+                      setPaused(false)
+                      gameState.recalibrate()
+                      gameState.goToMenu()
+                    }}>Confirm</button>
+                    <button onClick={() => {
+                      setShowRecalConfirm(false)
+                      setPaused(false)
+                    }}>Cancel</button>
+                  </div>
+                </div>
+              </div>
             )}
 
             {roundEndResult && (
@@ -421,12 +549,10 @@ function App() {
                 accuracy={lastRoundStats.accuracy}
                 avgReactionMs={lastRoundStats.avgReactionMs}
                 roundScore={lastRoundStats.roundScore}
-                highScore={gameState.highScore}
                 isNewHighScore={lastRoundStats.roundScore > gameState.highScore}
-                focusKeys={gameState.focusKeys}
-                nextFocusKeys={gameState.weakKeys.slice(0, 5)}
+                nextFocusKeys={gameState.nextCalibrationKeys ?? gameState.weakKeys.slice(0, 5)}
                 keysImproved={lastRoundStats.keysImproved}
-                keysDefined={lastRoundStats.keysDefined}
+                keysDeclined={lastRoundStats.keysDeclined}
                 onNextRound={handleNextRound}
               />
             )}

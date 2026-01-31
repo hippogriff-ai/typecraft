@@ -6,6 +6,14 @@ export const KEY_GROUPS = {
   pythonSymbols: ['(', ')', '[', ']', '{', '}', ':', '=', '_', '#', '@', '.', ','],
 } as const
 
+export const KEY_GROUP_DISPLAY_NAMES: Record<string, string> = {
+  homeRow: 'Home Row',
+  topRow: 'Top Row',
+  bottomRow: 'Bottom Row',
+  numbers: 'Numbers',
+  pythonSymbols: 'Python Symbols',
+}
+
 export const ALL_KEYS: string[] = [
   ...new Set(Object.values(KEY_GROUPS).flat()),
 ]

@@ -35,6 +35,58 @@
 - ~~Visual polish (absorb animation red flash/dissolve, grape burst animation)~~ DONE
 - ~~clearCalibrationData preserves roundHistory/highScore (verify/fix)~~ DONE
 - ~~Explosion animations~~ DONE (pixel-scatter, 8 particles, 300ms CSS animation)
+- ~~Fix: Settings from HUD/Pause during gameplay destroys active round~~ DONE (in-game settings overlay, 4 new tests, src/App.tsx, src/App.css, src/__tests__/App.test.tsx)
+- ~~Fix: averageTimeMs running average diluted by miss count~~ DONE (use correctAttempts as divisor, handle no-hits in weakness score, 1 new test + 2 updated tests, src/lib/scoring.ts, src/__tests__/scoring.test.ts)
+- ~~Comprehensive useGameLoop test coverage~~ DONE (15 new tests: start/stop, handleKeyPress hit/miss/targeting, game tick movement, collision events, round end grape-loss/cleared, wave auto-advance, pendingSpawns blocking, calibration mode, unmount cleanup. src/__tests__/useGameLoop.test.tsx 3→18 tests)
+- ~~Fix: Modifier keys and uppercase creating phantom key profiles~~ DONE (filter non-single-char keys, normalize to lowercase, 2 new tests. src/App.tsx, src/__tests__/App.test.tsx)
+- ~~Fix: Accuracy diluted by pending invaders in staggered spawn queue~~ DONE (use appearedCount = totalSpawned - pendingSpawns.length for round-end accuracy, WPM, and pause menu. 1 new test. src/App.tsx, src/__tests__/game-engine.test.ts)
+- ~~Fix: HUD recalibrate during gameplay breaks game state~~ DONE (confirmation overlay, pauses game, Confirm → recalibrate + menu, Cancel/Escape → resume. 3 new tests. src/App.tsx, src/__tests__/App.test.tsx)
+- ~~Fix: Non-invader single-char keys (Space, backtick, etc.) creating phantom profiles~~ DONE (add ALL_KEYS.includes(key) guard, 1 new test. src/App.tsx, src/__tests__/App.test.tsx)
+- ~~Fix: Calibration tracker reset on pause/resume~~ DONE (only reset when currentWave === 0, 1 new test. src/hooks/useGameLoop.ts, src/__tests__/useGameLoop.test.tsx)
+- ~~Fix: maxInvadersPerWave setting silently ignored + validateSettings never called~~ DONE (pass setting to createRoundState, call validateSettings in loadState, 2 new tests. src/App.tsx, src/lib/storage.ts, src/__tests__/storage.test.ts)
+- ~~Spec fix: Speed preset changes not applying immediately to existing invaders~~ DONE (rescaleInvaderSpeeds in game-engine, prevSpeedRef detection in useGameLoop, 4 new tests. src/lib/game-engine.ts, src/hooks/useGameLoop.ts, src/__tests__/game-engine.test.ts)
+- ~~Responsive OnboardingDemo~~ DONE (accept boardSize prop, compute center/spawn positions dynamically. src/components/OnboardingDemo.tsx, src/App.tsx)
+- ~~Fix: selectWordsForFocus crash with empty focusKeys~~ DONE (early return guard, 1 new test. src/lib/word-list.ts, src/__tests__/word-list.test.ts)
+- ~~E2E regression tests for recalibrate during gameplay and in-game settings~~ DONE (4 new E2E tests: HUD recalibrate confirm overlay, cancel, confirm→menu, settings overlay→gameplay. e2e/game-flow.spec.ts)
+- ~~OnboardingDemo hook stability + a11y~~ DONE (useMemo for spawnPositions, centerRef for rAF/keydown closures, aria-label on GameBoard. src/components/OnboardingDemo.tsx, src/components/GameBoard.tsx)
+- ~~Fix: recordKeyResult stale closure loses rapid keypress data + uppercase word list creates unhittable invaders~~ DONE (functional setAppState updater, lowercase 'true'/'false'/'none', 2 new tests. src/hooks/useGameState.ts, src/lib/word-list.ts, src/__tests__/useGameState.test.tsx, src/__tests__/word-list.test.ts)
+- ~~Fix: Phantom keypress after round end records false misses~~ DONE (roundOver guard in useGameLoop handleKey, 1 new test. src/hooks/useGameLoop.ts, src/__tests__/useGameLoop.test.tsx)
+- ~~Spec fix: 70/30 focus/filler split + dead code cleanup~~ DONE (spawnWave generates 70% focus from words + 30% filler from ALL_KEYS; removed unused generateWaveChars. 1 new test, 3 dead tests removed. src/lib/game-engine.ts, src/lib/wave-generator.ts, src/__tests__/game-engine.test.ts, src/__tests__/wave-generator.test.ts)
+- ~~Fix: Explosion color ignoring color-blind mode~~ DONE (pass settings.colorBlindMode to getCharColor in explosion creation. src/App.tsx)
+- ~~Spec fix: Filler keys use ranked 6-10 weakest instead of random ALL_KEYS~~ DONE (getNextPracticeRound already returned fillerKeys; wired through AppState.currentFillerKeys, useGameState callbacks (startGame/completeRound/beginPractice), and App.tsx createRoundState. spawnWave prefers state.fillerKeys when available. 1 new test. src/lib/storage.ts, src/hooks/useGameState.ts, src/App.tsx, src/__tests__/useGameState.test.tsx)
+- ~~Bug fix: Calibration rounds not re-randomized on recalibrate~~ DONE (calibrationRounds was useState-frozen from mount; recalibrate only reset index. Fix: setCalibrationRounds(getCalibrationRounds()) in recalibrate(). 1 new test. src/hooks/useGameState.ts, src/__tests__/useGameState.test.tsx)
+- ~~Bug fix: Practice filler keys leak into calibration rounds after recalibrate~~ DONE (clearCalibrationData didn't clear currentFillerKeys; calibration paths didn't set currentFillerKeys:[]. Fix: clear in clearCalibrationData + startGame/completeDemo/completeRound calibration branches. 1 new test. src/lib/storage.ts, src/hooks/useGameState.ts, src/__tests__/storage.test.ts)
+- ~~Defensive fix: Unbounded key profile history growth~~ DONE (history[] capped at 20 entries via .slice(-20) in recordKeyPress. computeTrend uses last 10. 1 new test. src/lib/scoring.ts, src/__tests__/scoring.test.ts)
+- ~~Code quality: ESLint warning + duplicate DEFAULT_SETTINGS~~ DONE (added settings.colorBlindMode to keydown useEffect deps; replaced duplicate DEFAULT_SETTINGS in useGameState.ts with import from settings.ts. src/App.tsx, src/hooks/useGameState.ts)
+- ~~UX fix: RoundSummary missing field labels~~ DONE (added "Grapes:", "Accuracy:", "Avg Reaction:", "Improved:", "Declined:" labels per spec. src/components/RoundSummary.tsx)
+- ~~Spec fix: Calibration rounds use 100% focus keys~~ DONE (App.tsx converted empty fillerKeys[] to undefined; spawnWave fell back to ALL_KEYS for 30% filler. Fix: pass fillerKeys directly, spawnWave uses hasFiller flag to distinguish calibration (100% focus) from practice (70/30). 1 new test. src/App.tsx, src/lib/game-engine.ts, src/__tests__/game-engine.test.ts)
+- ~~UX fix: HUD shows calibration key group name~~ DONE (HUD showed "Calibration" instead of which group is being tested. Fix: KEY_GROUP_DISPLAY_NAMES in keys.ts, calibrationRoundName exposed from useGameState, App.tsx shows "Calibration: Home Row" etc. 2 new tests. src/lib/keys.ts, src/hooks/useGameState.ts, src/App.tsx, src/__tests__/useGameState.test.tsx)
+- ~~Bug fix: Round summary next focus keys wrong during calibration~~ DONE (showed overall weakest keys instead of next calibration group's keys. Fix: nextCalibrationKeys exposed from useGameState, App.tsx uses it when available. 2 new tests. src/hooks/useGameState.ts, src/App.tsx, src/__tests__/useGameState.test.tsx)
+- ~~Bug fix: Calibration progress lost on browser refresh~~ DONE (calibrationRoundIndex reset to 0, rounds re-randomized on mount. Fix: persist calibrationOrder in AppState, restore index from completedGroups.length, reconstruct round configs from persisted order. 1 new test. src/lib/storage.ts, src/hooks/useGameState.ts, src/__tests__/useGameState.test.tsx)
+- ~~Defensive fix: Cancel stale countdown after calibration completes~~ DONE (countdown ran invisibly after 5th calibration round, calling startNewRound() wastefully. Fix: cancel countdown when screen !== 'playing'. src/App.tsx)
+- ~~Bug fix: Invader teleportation on tab switch + escape during transitions~~ DONE (rAF timestamp jumps ahead while tab hidden; deltaSeconds was uncapped → invaders teleport. Also Escape during round-end/countdown/summary toggled pause. Fix: cap deltaSeconds at 0.1s in useGameLoop; guard Escape during transitions in App.tsx. 1 new test. src/hooks/useGameLoop.ts, src/App.tsx, src/__tests__/useGameLoop.test.tsx)
+- ~~UX fix: HUD bottom bar missing "Wave" and "Grapes:" labels~~ DONE (spec shows "Wave 4/8" and "Grapes: 20/24" but HUD rendered just numbers. Also currentWave=0 showed "0/8" before first wave spawns. Fix: added labels, clamped wave to min 1. 1 new test. src/components/HUD.tsx, src/__tests__/HUD.test.tsx)
+- ~~Spec fix: Invader character size 22px below 28px spec minimum~~ DONE (spec: "monospace, 28px+". Increased font 22→28px, container 40→48px, sprite 36→44px. Also: E2E grape-count assertion updated for new "Grapes:" label. src/App.css, src/components/GameBoard.tsx, e2e/game-flow.spec.ts)
+- ~~Visual fix: Grape missing white specular highlight~~ DONE (spec: "white specular highlight". Added rgba(255,255,255,0.6) at 30% 30% in radial gradient. src/App.css)
+- ~~Code quality: Simplify learning speed display condition~~ DONE (dual check replaced with `roundHistory.length < 10` matching spec wording. src/App.tsx)
+- ~~Spec fix: Grape cluster variable density~~ DONE (cluster shrank when grapes lost instead of maintaining area. Fix: dynamic gap = max(4, min(14, round(maxGrapes/grapes * 4))). 1 new test. src/components/GameBoard.tsx, src/__tests__/GameBoard.test.tsx)
+- ~~Spec fix: Stats screen Trend column not sortable~~ DONE (spec: "Sortable by any column" — Trend column had no onClick. Added trend sort with numeric mapping: improving=1, stable=0, declining=-1. 1 new test. src/components/StatsScreen.tsx, src/__tests__/StatsScreen.test.tsx)
+- ~~Spec fix: Explosion missing initial white/yellow flash~~ DONE (spec: "bright flash (white/yellow)". Explosion particles now start #ffffaa at scale 1.3, transition to character color by 20% of animation. Uses --particle-color CSS variable. src/App.css, src/components/GameBoard.tsx)
+- ~~Defensive fix: loadState skips validation when schemaVersion absent~~ DONE (condition `schemaVersion !== undefined && ...` allowed JSON without schemaVersion to load — missing required fields would crash app. Fix: simplified to `schemaVersion !== SCHEMA_VERSION`. 2 new tests. src/lib/storage.ts, src/__tests__/storage.test.ts)
+- ~~Perf fix: useGameState called loadState() 4 times during init~~ DONE (each useState initializer called loadState() independently — 4x JSON.parse of same data. Fix: single loadState() call cached in initData useState. src/hooks/useGameState.ts)
+- ~~Perf + stability fix: GameBoard invader React keys~~ DONE (indexOf O(N²) replaced with unique inv.id. Module-level auto-incrementing counter in game-engine.ts. 1 new test. src/lib/game-engine.ts, src/components/GameBoard.tsx, src/__tests__/GameBoard.test.tsx, src/__tests__/game-engine.test.ts)
+- ~~Defensive fix: Adaptive calibration speed unbounded~~ DONE (repeated 1.1x multiplications could push speed to 2.6x+ base. Fix: clamp to [0.5x, 2x] base speed. 2 new tests. src/lib/adaptive-calibration.ts, src/__tests__/adaptive-calibration.test.ts)
+- ~~Bug fix: bestAccuracy always 100% after first hit~~ DONE (bestAccuracy computed from lifetime correctAttempts/totalAttempts, which is 1/1=100% after first hit. Made "Best Acc" stats column useless. Fix: only track after 10+ attempts. 1 new test. src/lib/scoring.ts, src/__tests__/scoring.test.ts)
+- ~~UX + code quality~~ DONE (StatsScreen empty state message when no key data; removed unnecessary type cast in App.tsx. 1 new test. src/App.tsx, src/components/StatsScreen.tsx, src/__tests__/StatsScreen.test.tsx)
+- ~~UX fix: bestAccuracy shows "0%" for keys with < 10 attempts~~ DONE (misleading since 0% implies no accuracy when really not enough data. Changed to "—" dash when bestAccuracy = 0, consistent with speed column handling. 1 new test. src/components/StatsScreen.tsx, src/__tests__/StatsScreen.test.tsx)
+- ~~Race condition fix: Calibration first round wrong invader characters~~ DONE (setRoundState + gameLoop.start in same render's effects; rAF tick read stale stateRef. Fix: resetState() method writes directly to stateRef bypassing React batching. 1 new test. src/hooks/useGameLoop.ts, src/App.tsx, src/__tests__/useGameLoop.test.tsx)
+- ~~Lint/code quality fixes~~ DONE (ref assignment during render → useEffect; render-phase variable mutation → precomputed array; unnecessary useCallback dependency removed; unused variable removed. src/App.tsx, src/components/GameBoard.tsx, src/hooks/useGameLoop.ts)
+- ~~Defensive fix: getNextPracticeRound with empty profiles~~ DONE (returned empty focusKeys[], relying on downstream fallbacks. Fix: early return with home row defaults. 1 new test. src/lib/wave-generator.ts, src/__tests__/wave-generator.test.ts)
+- ~~Word list expansion (iteration 123)~~ DONE (WORDS array expanded from 542 to 600+ entries per spec target ~600. Added 58+ common English words, fixed duplicates. src/lib/word-list.ts)
+- ~~UX fix (iteration 124): Onboarding demo prompt unreadable behind grape~~ DONE (prompt text overlapped grape target at center. Moved to absolute positioned bottom 12%. src/App.css, src/components/OnboardingDemo.tsx)
+- ~~Bug fix (iteration 125): HUD showed stale between-rounds WPM during gameplay~~ DONE (HUD displayed gameState.currentWPM rolling average instead of live round WPM. Added liveWpm state computed per-tick from appeared count, accuracy, elapsed time. 1 new test. src/App.tsx, src/__tests__/App.test.tsx)
+- ~~Spec fix (iteration 126): Mixed letter+symbol focus keys produced no symbol invaders from words~~ DONE (selectWordsForFocus used all-or-nothing pool switch: WORDS for any alphanumeric key, CODE_SNIPPETS only when ALL keys were symbols. Mixed keys like ['z',';',','] searched only WORDS which has no symbols. Fix: always search both pools and combine matches. Added 3 new CODE_SNIPPETS with '/' and ';' coverage. 1 new test. src/lib/word-list.ts, src/__tests__/word-list.test.ts)
+- ~~Perf fix (iteration 127): Invader movement jank~~ DONE (User reported "obvious pause point" in invader movement. Root cause: `left`/`top` CSS properties trigger layout reflow every frame; SpriteRenderer (64 grid cells/invader) re-rendered every rAF frame despite unchanging props. Fix: (1) `transform: translate()` for GPU-composited positioning, (2) `will-change: transform` CSS hint, (3) `React.memo` on SpriteRenderer. src/components/GameBoard.tsx, src/components/SpriteRenderer.tsx, src/App.css)
 
 ---
 
@@ -1833,33 +1885,33 @@ npm test
 
 **Step 2: Run `npm run dev` and verify visually:**
 
-- [ ] Dark theme (#1a1a2e background)
-- [ ] Main menu renders with all 4 buttons
-- [ ] Start Game → demo (first time) → calibration → practice
-- [ ] Pixel-art invaders with colored sprites (cool=letters, warm=symbols, neutral=numbers)
-- [ ] Invaders approach from all 4 screen edges toward center
-- [ ] Characters visible on invaders (28px+ monospace)
-- [ ] Grape cluster at center — styled DOM spheres, no emoji
-- [ ] Vine/stem lines connecting grapes
-- [ ] Grape burst animation (squash + juice droplets) when 3 invaders absorbed
-- [ ] Accuracy ring around cluster — depletes on miss, recovers on hit
-- [ ] Typing destroys nearest matching invader — pixel-scatter explosion (300ms)
-- [ ] Absorbed invader: red flash, dissolves inward
-- [ ] HUD: high score, round score, WPM, learning speed, weak key badges
-- [ ] Bottom bar: round name, wave N/M, grapes X/Y
-- [ ] Round end: "ROUND CLEAR" or "GAME OVER" (1-2s), then summary
-- [ ] Round summary: grapes, accuracy, reaction time, next focus preview
-- [ ] 3-2-1 countdown before next round
-- [ ] Escape → pause overlay with resume/stats/settings/quit
-- [ ] Quit confirmation dialog
-- [ ] Settings screen: all 4 settings with controls
-- [ ] Stats screen: sortable per-key table
-- [ ] Game fills viewport, scales with window size
-- [ ] Z-ordering: closer invaders render on top
-- [ ] Speed escalation feels noticeable across waves
-- [ ] Calibration adapts speed (gets harder if you're good)
-- [ ] Recalibrate: resets profiles, keeps high score
-- [ ] Refresh browser: state persists, returns to menu
+- [x] Dark theme (#1a1a2e background)
+- [x] Main menu renders with all 4 buttons
+- [x] Start Game → demo (first time) → calibration → practice
+- [x] Pixel-art invaders with colored sprites (cool=letters, warm=symbols, neutral=numbers)
+- [x] Invaders approach from all 4 screen edges toward center
+- [x] Characters visible on invaders (28px+ monospace)
+- [x] Grape cluster at center — styled DOM spheres, no emoji
+- [x] Vine/stem lines connecting grapes
+- [x] Grape burst animation (squash + juice droplets) when 3 invaders absorbed
+- [x] Accuracy ring around cluster — depletes on miss, recovers on hit
+- [x] Typing destroys nearest matching invader — pixel-scatter explosion (300ms)
+- [x] Absorbed invader: red flash, dissolves inward
+- [x] HUD: high score, round score, WPM, learning speed, weak key badges
+- [x] Bottom bar: round name, wave N/M, grapes X/Y
+- [x] Round end: "ROUND CLEAR" or "GAME OVER" (1-2s), then summary
+- [x] Round summary: grapes, accuracy, reaction time, next focus preview
+- [x] 3-2-1 countdown before next round
+- [x] Escape → pause overlay with resume/stats/settings/quit
+- [x] Quit confirmation dialog
+- [x] Settings screen: all 4 settings with controls
+- [x] Stats screen: sortable per-key table
+- [x] Game fills viewport, scales with window size
+- [x] Z-ordering: closer invaders render on top
+- [x] Speed escalation feels noticeable across waves
+- [x] Calibration adapts speed (gets harder if you're good)
+- [x] Recalibrate: resets profiles, keeps high score
+- [x] Refresh browser: state persists, returns to menu
 
 **Step 3: Fix any issues found**
 

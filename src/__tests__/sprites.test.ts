@@ -4,7 +4,7 @@
  * and random sprite assignment. Can be simplified if sprite templates change shape.
  */
 import { describe, it, expect } from 'vitest'
-import { SPRITE_TEMPLATES, getCharColor, assignSprite } from '../lib/sprites'
+import { SPRITE_TEMPLATES, getCharColor } from '../lib/sprites'
 
 describe('SPRITE_TEMPLATES', () => {
   it('contains 10-15 templates', () => {
@@ -60,19 +60,3 @@ describe('getCharColor', () => {
   })
 })
 
-describe('assignSprite', () => {
-  it('returns a sprite template and color for a character', () => {
-    const sprite = assignSprite('a')
-    expect(sprite.template).toBeDefined()
-    expect(sprite.color).toBeDefined()
-  })
-
-  it('same character may get different sprites (random from pool)', () => {
-    const sprites = new Set<number>()
-    for (let i = 0; i < 50; i++) {
-      const sprite = assignSprite('a')
-      sprites.add(SPRITE_TEMPLATES.indexOf(sprite.template))
-    }
-    expect(sprites.size).toBeGreaterThan(1)
-  })
-})

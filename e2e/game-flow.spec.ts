@@ -96,6 +96,44 @@ test('navigate to stats screen and back', async ({ page }) => {
 })
 
 /**
+ * E2E: Stats screen displays per-key data from persisted key profiles.
+ * Verifies that the stats table renders actual game data (accuracy, kills, speed)
+ * for keys that have recorded activity, not just navigation.
+ */
+test('stats screen displays per-key data from persisted profiles', async ({ page }) => {
+  const profiles = {
+    a: {
+      key: 'a', totalAttempts: 20, correctAttempts: 18, lifetimeKills: 18,
+      averageTimeMs: 250, bestAccuracy: 0.95, bestSpeedMs: 150, history: [],
+    },
+    s: {
+      key: 's', totalAttempts: 15, correctAttempts: 6, lifetimeKills: 6,
+      averageTimeMs: 500, bestAccuracy: 0, bestSpeedMs: 400, history: [],
+    },
+  }
+  await setupReturningPlayer(page, {
+    keyProfiles: profiles,
+    totalRounds: 5,
+    totalPlayTimeMs: 120000,
+  })
+  await page.getByRole('button', { name: /stats/i }).click()
+  await expect(page.getByTestId('stats-screen')).toBeVisible()
+  // Table should have rows for keys 'a' and 's'
+  await expect(page.getByTestId('stat-row-a')).toBeVisible()
+  await expect(page.getByTestId('stat-row-s')).toBeVisible()
+  // Key 'a': 18/20 = 90% accuracy, 18 kills
+  const rowA = page.getByTestId('stat-row-a')
+  await expect(rowA).toContainText('90%')
+  await expect(rowA).toContainText('18')
+  // Key 's': 6/15 = 40% accuracy, 6 kills
+  const rowS = page.getByTestId('stat-row-s')
+  await expect(rowS).toContainText('40%')
+  await expect(rowS).toContainText('6')
+  // Session stats should be visible
+  await expect(page.getByTestId('session-stats')).toContainText('5 rounds')
+})
+
+/**
  * E2E: Navigation — settings screen and back.
  * Verifies menu → settings → back to menu navigation.
  */
@@ -177,6 +215,8 @@ test('quit from pause returns to menu after confirmation', async ({ page }) => {
 test('recalibrate resets to calibration mode', async ({ page }) => {
   await setupReturningPlayer(page, { highScore: 42 })
   await page.getByRole('button', { name: /recalibrate/i }).click()
+  // Confirmation dialog appears — must click Confirm to actually recalibrate
+  await page.getByRole('button', { name: /confirm/i }).click()
 
   await page.getByRole('button', { name: /start game/i }).click()
   await expect(page.getByTestId('game-board')).toBeVisible()
@@ -196,6 +236,21 @@ test('state persists across page reload', async ({ page }) => {
   // Verify persisted settings
   await page.getByRole('button', { name: /settings/i }).click()
   await expect(page.getByRole('button', { name: 'Fast' })).toBeVisible()
+})
+
+/**
+ * E2E: Color-blind mode persists across page reload.
+ * Spec: "Color-blind modes: 2-3 alternative color palettes for common
+ * color vision deficiencies (deuteranopia, protanopia). Toggled in settings."
+ */
+test('color-blind mode setting persists across page reload', async ({ page }) => {
+  await setupReturningPlayer(page, {
+    settings: { ...RETURNING_PLAYER.settings, colorBlindMode: 'deuteranopia' },
+  })
+
+  await page.reload()
+  await page.getByRole('button', { name: /settings/i }).click()
+  await expect(page.getByRole('button', { name: /deuteranopia/i })).toHaveAttribute('aria-pressed', 'true')
 })
 
 /**
@@ -225,5 +280,165 @@ test('HUD displays game information', async ({ page }) => {
   await expect(page.getByText('Score:0')).toBeVisible()
   await expect(page.getByText(/WPM:/)).toBeVisible()
   await expect(page.getByText(/Wave 1\/8/)).toBeVisible()
-  await expect(page.getByTestId('grape-count')).toHaveText('24/24')
+  await expect(page.getByTestId('grape-count')).toHaveText('Grapes: 24/24')
+})
+
+/**
+ * E2E: HUD recalibrate during gameplay shows confirmation overlay.
+ * Regression test for iteration 38: recalibrate button previously called
+ * recalibrate() directly without confirmation, leaving game in broken state.
+ */
+test('HUD recalibrate during gameplay shows confirmation overlay', async ({ page }) => {
+  await setupReturningPlayer(page, { settings: { ...RETURNING_PLAYER.settings, speedPreset: 'slow' } })
+  await page.getByRole('button', { name: /start game/i }).click()
+  await expect(page.getByTestId('game-board')).toBeVisible()
+
+  // Click HUD recalibrate button
+  await page.getByRole('button', { name: /recalibrate/i }).click()
+  await expect(page.getByTestId('recalibrate-confirm-overlay')).toBeVisible()
+  // Game board still behind overlay
+  await expect(page.getByTestId('game-board')).toBeVisible()
+
+  // Cancel returns to gameplay
+  await page.getByRole('button', { name: /cancel/i }).click()
+  await expect(page.getByTestId('recalibrate-confirm-overlay')).not.toBeVisible()
+  await expect(page.getByTestId('game-board')).toBeVisible()
+})
+
+/**
+ * E2E: HUD recalibrate confirm goes to main menu.
+ * Verifies that confirming recalibration during gameplay properly resets
+ * and returns to the main menu without breaking game state.
+ */
+test('HUD recalibrate confirm during gameplay goes to menu', async ({ page }) => {
+  await setupReturningPlayer(page, { settings: { ...RETURNING_PLAYER.settings, speedPreset: 'slow' } })
+  await page.getByRole('button', { name: /start game/i }).click()
+  await expect(page.getByTestId('game-board')).toBeVisible()
+
+  await page.getByRole('button', { name: /recalibrate/i }).click()
+  await page.getByRole('button', { name: /confirm/i }).click()
+  await expect(page.getByRole('button', { name: /start game/i })).toBeVisible()
+})
+
+/**
+ * E2E: Practice round completion — destroy all invaders, see round-end and
+ * round-summary screens. This is the core gameplay loop.
+ * Spec: "Round End: brief victory/defeat screen (1-2 seconds)" then
+ *        "Round Summary: stats review between rounds"
+ */
+test('practice round completion shows round-end and round-summary', async ({ page }) => {
+  // Use 1 wave with minimal invaders on slow speed for quick, reliable test
+  await setupReturningPlayer(page, {
+    settings: { ...RETURNING_PLAYER.settings, speedPreset: 'slow', wavesPerRound: 1, maxInvadersPerWave: 6 },
+  })
+  await page.getByRole('button', { name: /start game/i }).click()
+  await expect(page.getByTestId('game-board')).toBeVisible()
+
+  // Destroy invaders as they appear. Staggered spawning means batches arrive
+  // over several seconds, so keep trying until round-end or summary appears.
+  for (let attempt = 0; attempt < 40; attempt++) {
+    // Check if we've reached round-end or round-summary (round is complete)
+    const doneIndicator = page.getByTestId('round-end').or(page.getByText(/grapes survived/i))
+    if (await doneIndicator.isVisible().catch(() => false)) break
+
+    const invaders = page.locator('.invader')
+    const count = await invaders.count()
+    if (count > 0) {
+      const char = await invaders.first().textContent()
+      if (char?.trim()) {
+        await page.keyboard.press(char.trim())
+      }
+      await page.waitForTimeout(150)
+    } else {
+      await page.waitForTimeout(500)
+    }
+  }
+
+  // Round summary should appear (either directly or after round-end auto-dismiss)
+  await expect(page.getByText(/grapes survived/i)).toBeVisible({ timeout: 10000 })
+  await expect(page.getByRole('button', { name: /next round/i })).toBeVisible()
+})
+
+/**
+ * E2E: In-game settings overlay returns to gameplay on close.
+ * Regression test for iteration 33: settings from HUD previously destroyed
+ * the active round and returned to main menu instead of gameplay.
+ */
+test('HUD settings returns to gameplay on close', async ({ page }) => {
+  await setupReturningPlayer(page, { settings: { ...RETURNING_PLAYER.settings, speedPreset: 'slow' } })
+  await page.getByRole('button', { name: /start game/i }).click()
+  await expect(page.getByTestId('game-board')).toBeVisible()
+
+  // Open settings from HUD
+  await page.getByRole('button', { name: /^settings$/i }).click()
+  await expect(page.getByTestId('settings-screen')).toBeVisible()
+  // Game board still behind overlay
+  await expect(page.getByTestId('game-board')).toBeVisible()
+
+  // Close settings
+  await page.getByRole('button', { name: /back/i }).click()
+  await expect(page.getByTestId('settings-screen')).not.toBeVisible()
+  await expect(page.getByTestId('game-board')).toBeVisible()
+  // Not on main menu
+  await expect(page.getByRole('button', { name: /start game/i })).not.toBeVisible()
+})
+
+/**
+ * E2E: Calibration gameplay — play through the last calibration round,
+ * see calibration summary with stats, and begin practice mode.
+ * Spec: "After all 5 calibration rounds: Calibration Summary screen
+ *        showing initial weakness ranking, strongest/weakest keys,
+ *        overall accuracy, and a 'Begin Practice' button"
+ */
+test('calibration round completion leads to calibration summary and practice', async ({ page }) => {
+  // Set up state with 4/5 calibration groups done (pythonSymbols remaining)
+  await setupReturningPlayer(page, {
+    calibrationProgress: {
+      completedGroups: ['homeRow', 'topRow', 'bottomRow', 'numbers'],
+      complete: false,
+    },
+    calibrationOrder: ['homeRow', 'topRow', 'bottomRow', 'numbers', 'pythonSymbols'],
+    mode: 'calibration',
+    currentFocusKeys: ['(', ')', '[', ']', '{', '}', ':', '=', '_', '#', '@', '.', ','],
+    settings: { ...RETURNING_PLAYER.settings, speedPreset: 'slow', wavesPerRound: 1, maxInvadersPerWave: 6 },
+  })
+
+  await page.getByRole('button', { name: /start game/i }).click()
+  await expect(page.getByTestId('game-board')).toBeVisible()
+  await expect(page.getByText(/calibration/i)).toBeVisible()
+
+  // Destroy invaders as they appear until the round ends
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const doneIndicator = page.getByTestId('round-end').or(page.getByText(/grapes survived/i))
+    if (await doneIndicator.isVisible().catch(() => false)) break
+
+    const invaders = page.locator('.invader')
+    const count = await invaders.count()
+    if (count > 0) {
+      const char = await invaders.first().textContent()
+      if (char?.trim()) {
+        await page.keyboard.press(char.trim())
+      }
+      await page.waitForTimeout(150)
+    } else {
+      await page.waitForTimeout(500)
+    }
+  }
+
+  // Round summary should appear after round-end auto-dismiss
+  await expect(page.getByText(/grapes survived/i)).toBeVisible({ timeout: 10000 })
+  await expect(page.getByRole('button', { name: /next round/i })).toBeVisible()
+
+  // Click "Next Round" — last calibration group done, should show summary
+  await page.getByRole('button', { name: /next round/i }).click()
+
+  // Calibration summary with stats and begin practice button
+  await expect(page.getByTestId('calibration-summary')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByText(/calibration complete/i)).toBeVisible()
+  await expect(page.getByTestId('overall-accuracy')).toBeVisible()
+  await expect(page.getByRole('button', { name: /begin practice/i })).toBeVisible()
+
+  // Begin practice → gameplay resumes in practice mode
+  await page.getByRole('button', { name: /begin practice/i }).click()
+  await expect(page.getByTestId('game-board')).toBeVisible()
 })

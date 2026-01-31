@@ -33,18 +33,24 @@ export function recordKeyPress(
 ): KeyProfile {
   const totalAttempts = profile.totalAttempts + 1
   const correctAttempts = profile.correctAttempts + (press.correct ? 1 : 0)
-  const lifetimeKills = profile.lifetimeKills + (press.correct ? 1 : 0)
-  // Only include timeMs > 0 in the average. Misses are recorded with timeMs=0
-  // and should not dilute reaction time (which only measures destroyed invaders).
-  const averageTimeMs = press.timeMs > 0
-    ? (profile.averageTimeMs * profile.totalAttempts + press.timeMs) / totalAttempts
+  const lifetimeKills = (profile.lifetimeKills ?? 0) + (press.correct ? 1 : 0)
+  // Only include hits (correct=true, timeMs>0) in the average. Misses don't
+  // destroy invaders, so they have no meaningful reaction time per spec.
+  // Uses correctAttempts (hit count) as the divisor, not totalAttempts.
+  const averageTimeMs = press.correct && press.timeMs > 0
+    ? (profile.averageTimeMs * profile.correctAttempts + press.timeMs) / correctAttempts
     : profile.averageTimeMs
 
   const accuracy = correctAttempts / totalAttempts
-  const bestAccuracy = Math.max(profile.bestAccuracy, accuracy)
+  // Only start tracking bestAccuracy after 10+ attempts so the ratio is
+  // statistically meaningful (avoids trivial 1/1 = 100% after first hit).
+  const bestAccuracy = totalAttempts >= 10
+    ? Math.max(profile.bestAccuracy ?? 0, accuracy)
+    : profile.bestAccuracy ?? 0
+  const prevBestSpeed = profile.bestSpeedMs ?? 0
   const bestSpeedMs = press.correct && press.timeMs > 0
-    ? (profile.bestSpeedMs === 0 ? press.timeMs : Math.min(profile.bestSpeedMs, press.timeMs))
-    : profile.bestSpeedMs
+    ? (prevBestSpeed === 0 ? press.timeMs : Math.min(prevBestSpeed, press.timeMs))
+    : prevBestSpeed
 
   return {
     ...profile,
@@ -54,7 +60,7 @@ export function recordKeyPress(
     averageTimeMs,
     bestAccuracy,
     bestSpeedMs,
-    history: [...profile.history, press],
+    history: [...profile.history, press].slice(-20),
   }
 }
 
@@ -65,7 +71,10 @@ export function computeWeaknessScore(
   if (profile.totalAttempts === 0) return 1.0
 
   const accuracy = profile.correctAttempts / profile.totalAttempts
-  const normalizedSlowness = Math.min(profile.averageTimeMs / opts.maxTimeMs, 1)
+  // If no hits recorded, speed is unknown — treat as maximum slowness
+  const normalizedSlowness = profile.correctAttempts === 0
+    ? 1.0
+    : Math.min(profile.averageTimeMs / opts.maxTimeMs, 1)
 
   return (1 - accuracy) * 0.7 + normalizedSlowness * 0.3
 }

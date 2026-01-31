@@ -10,14 +10,24 @@ export interface KeyStat {
   trend: 'improving' | 'declining' | 'stable'
 }
 
-type SortColumn = 'key' | 'accuracy' | 'avgSpeedMs' | 'totalKills' | 'bestAccuracy' | 'bestSpeedMs'
+type SortColumn = 'key' | 'accuracy' | 'avgSpeedMs' | 'totalKills' | 'bestAccuracy' | 'bestSpeedMs' | 'trend'
 
 interface StatsScreenProps {
   keyStats: KeyStat[]
   onBack: () => void
+  totalRounds?: number
+  totalPlayTimeMs?: number
 }
 
-export function StatsScreen({ keyStats, onBack }: StatsScreenProps) {
+function formatPlayTime(ms: number): string {
+  const totalMinutes = Math.floor(ms / 60000)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours > 0) return `${hours}h ${minutes}m`
+  return `${minutes}m`
+}
+
+export function StatsScreen({ keyStats, onBack, totalRounds, totalPlayTimeMs }: StatsScreenProps) {
   const [sortCol, setSortCol] = useState<SortColumn>('key')
   const [sortAsc, setSortAsc] = useState(true)
 
@@ -30,7 +40,14 @@ export function StatsScreen({ keyStats, onBack }: StatsScreenProps) {
     }
   }
 
+  const trendOrder: Record<string, number> = { improving: 1, stable: 0, declining: -1 }
+
   const sorted = [...keyStats].sort((a, b) => {
+    if (sortCol === 'trend') {
+      const aVal = trendOrder[a.trend] ?? 0
+      const bVal = trendOrder[b.trend] ?? 0
+      return sortAsc ? aVal - bVal : bVal - aVal
+    }
     const aVal = a[sortCol]
     const bVal = b[sortCol]
     if (typeof aVal === 'string' && typeof bVal === 'string') {
@@ -60,16 +77,25 @@ export function StatsScreen({ keyStats, onBack }: StatsScreenProps) {
   return (
     <div className="stats-screen" data-testid="stats-screen">
       <h2>Key Statistics</h2>
+      {(totalRounds != null && totalRounds > 0) && (
+        <div className="session-stats" data-testid="session-stats">
+          <span>{totalRounds} rounds</span>
+          <span>{formatPlayTime(totalPlayTimeMs ?? 0)}</span>
+        </div>
+      )}
+      {sorted.length === 0 ? (
+        <p data-testid="stats-empty">No data yet. Complete some rounds to see your stats.</p>
+      ) : (
       <table>
         <thead>
           <tr>
-            <th role="columnheader" onClick={() => handleSort('key')}>Key</th>
-            <th role="columnheader" onClick={() => handleSort('accuracy')}>Accuracy</th>
-            <th role="columnheader" onClick={() => handleSort('avgSpeedMs')}>Avg Speed</th>
-            <th role="columnheader" onClick={() => handleSort('totalKills')}>Kills</th>
-            <th role="columnheader" onClick={() => handleSort('bestAccuracy')}>Best Acc</th>
-            <th role="columnheader" onClick={() => handleSort('bestSpeedMs')}>Best Speed</th>
-            <th>Trend</th>
+            <th scope="col" onClick={() => handleSort('key')}>Key</th>
+            <th scope="col" onClick={() => handleSort('accuracy')}>Accuracy %</th>
+            <th scope="col" onClick={() => handleSort('avgSpeedMs')}>Avg Speed (ms)</th>
+            <th scope="col" onClick={() => handleSort('totalKills')}>Total Kills</th>
+            <th scope="col" onClick={() => handleSort('bestAccuracy')}>Best Accuracy</th>
+            <th scope="col" onClick={() => handleSort('bestSpeedMs')}>Best Speed</th>
+            <th scope="col" onClick={() => handleSort('trend')}>Trend</th>
           </tr>
         </thead>
         <tbody>
@@ -77,15 +103,16 @@ export function StatsScreen({ keyStats, onBack }: StatsScreenProps) {
             <tr key={stat.key} data-testid={`stat-row-${stat.key}`} style={{ backgroundColor: rowColor(stat.accuracy) }}>
               <td>{stat.key}</td>
               <td>{Math.round(stat.accuracy * 100)}%</td>
-              <td>{stat.avgSpeedMs}ms</td>
+              <td>{stat.totalKills > 0 ? `${stat.avgSpeedMs}ms` : '\u2014'}</td>
               <td>{stat.totalKills}</td>
-              <td>{Math.round(stat.bestAccuracy * 100)}%</td>
-              <td>{stat.bestSpeedMs}ms</td>
+              <td>{stat.bestAccuracy > 0 ? `${Math.round(stat.bestAccuracy * 100)}%` : '\u2014'}</td>
+              <td>{stat.totalKills > 0 ? `${stat.bestSpeedMs}ms` : '\u2014'}</td>
               <td><span data-testid="trend-indicator" style={{ color: trendArrow(stat.trend).color }}>{trendArrow(stat.trend).symbol}</span></td>
             </tr>
           ))}
         </tbody>
       </table>
+      )}
       <button onClick={onBack}>Back</button>
     </div>
   )

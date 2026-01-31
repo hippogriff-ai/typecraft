@@ -4,33 +4,29 @@ interface RoundSummaryProps {
   accuracy: number
   avgReactionMs: number
   roundScore: number
-  highScore: number
   isNewHighScore: boolean
-  focusKeys: string[]
   nextFocusKeys: string[]
   keysImproved?: string[]
-  keysDefined?: string[]
+  keysDeclined?: string[]
   onNextRound: () => void
 }
 
 export function RoundSummary(props: RoundSummaryProps) {
-  const keysDeclined = (props.keysDefined ?? []).filter(
-    (k) => !(props.keysImproved ?? []).includes(k),
-  )
+  const keysDeclined = props.keysDeclined ?? []
 
   return (
     <div className="round-summary" data-testid="round-summary">
       <h2>Round Summary</h2>
 
       <div data-testid="grapes-survived">
-        {props.grapesLeft}/{props.maxGrapes}
+        Grapes survived: {props.grapesLeft}/{props.maxGrapes}
       </div>
 
       <div data-testid="accuracy">
-        {Math.round(props.accuracy * 100)}%
+        Accuracy: {Math.round(props.accuracy * 100)}%
       </div>
 
-      <div data-testid="reaction-time">{props.avgReactionMs}ms</div>
+      <div data-testid="reaction-time">Average reaction time: {props.avgReactionMs}ms</div>
 
       {props.isNewHighScore && (
         <div data-testid="new-high-score" className="new-high-score">
@@ -40,16 +36,16 @@ export function RoundSummary(props: RoundSummaryProps) {
 
       {props.keysImproved && props.keysImproved.length > 0 && (
         <div data-testid="keys-improved">
-          {props.keysImproved.join(' ')}
+          Keys improved: {props.keysImproved.join(' ')}
         </div>
       )}
 
       {keysDeclined.length > 0 && (
-        <div data-testid="keys-declined">{keysDeclined.join(' ')}</div>
+        <div data-testid="keys-declined">Keys declined: {keysDeclined.join(' ')}</div>
       )}
 
       <div data-testid="next-focus">
-        Next: {props.nextFocusKeys.join(' ')}
+        Next round: {props.nextFocusKeys.join(' ')}
       </div>
 
       <button onClick={props.onNextRound}>Next Round</button>

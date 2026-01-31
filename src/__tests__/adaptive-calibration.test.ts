@@ -56,6 +56,26 @@ describe('adaptive calibration', () => {
     expect(getAdaptedSpeed(tracker)).toBeCloseTo(60.5, 0)
   })
 
+  /** Speed must not exceed 2x base, preventing the game from becoming unplayable. */
+  it('caps speed increase at 2x base speed', () => {
+    let tracker = createCalibrationTracker(50)
+    // 100 perfect results = 10 adjustments of +10% = 1.1^10 ≈ 2.59x uncapped
+    for (let i = 0; i < 100; i++) {
+      tracker = recordCalibrationResult(tracker, { correct: true })
+    }
+    expect(getAdaptedSpeed(tracker)).toBeLessThanOrEqual(100) // 2x base
+  })
+
+  /** Speed must not drop below 0.5x base, keeping the game playable. */
+  it('floors speed decrease at 0.5x base speed', () => {
+    let tracker = createCalibrationTracker(50)
+    // 100 miss-heavy results = 10 adjustments of -10% = 0.9^10 ≈ 0.35x uncapped
+    for (let i = 0; i < 100; i++) {
+      tracker = recordCalibrationResult(tracker, { correct: false })
+    }
+    expect(getAdaptedSpeed(tracker)).toBeGreaterThanOrEqual(25) // 0.5x base
+  })
+
   it('uses a rolling window of last 10 results, not all-time', () => {
     let tracker = createCalibrationTracker(50)
     for (let i = 0; i < 10; i++) {

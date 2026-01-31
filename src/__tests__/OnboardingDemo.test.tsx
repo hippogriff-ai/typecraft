@@ -4,7 +4,7 @@
  * Spec: "Interactive Demo (first launch only): guided onboarding mini-round"
  */
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, act, waitFor } from '@testing-library/react'
 import { OnboardingDemo } from '../components/OnboardingDemo'
 
 describe('OnboardingDemo', () => {
@@ -32,5 +32,24 @@ describe('OnboardingDemo', () => {
     const onComplete = vi.fn()
     render(<OnboardingDemo onComplete={onComplete} />)
     expect(typeof onComplete).toBe('function')
+  })
+
+  /**
+   * CapsLock or Shift causes e.key to be uppercase ('A' instead of 'a').
+   * The demo invaders use lowercase chars. The handler must normalize to
+   * lowercase so CapsLock doesn't break the onboarding experience.
+   */
+  it('accepts uppercase keypresses (CapsLock compatibility)', async () => {
+    render(<OnboardingDemo onComplete={vi.fn()} />)
+    // The first invader has char 'a'
+    expect(screen.getByTestId('demo-invader')).toHaveTextContent('a')
+    // Fire uppercase 'A' keydown (simulating CapsLock)
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'A' }))
+    })
+    // Invader should be destroyed (no longer visible)
+    await waitFor(() => {
+      expect(screen.queryByTestId('demo-invader')).toBeNull()
+    })
   })
 })

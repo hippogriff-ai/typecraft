@@ -47,6 +47,11 @@ button:hover {
   background-color: #3a3a5a;
 }
 
+button:focus-visible {
+  outline: 2px solid #7070ff;
+  outline-offset: 2px;
+}
+
 button:active {
   transform: scale(0.97);
 }

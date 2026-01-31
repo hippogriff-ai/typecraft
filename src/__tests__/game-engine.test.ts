@@ -8,6 +8,8 @@ import {
   checkCollisions,
   releasePendingSpawns,
   checkRoundComplete,
+  rescaleInvaderSpeeds,
+  CLUSTER_COLLISION_RADIUS,
   type Vec2,
 } from '../lib/game-engine'
 
@@ -22,10 +24,33 @@ describe('createInvader', () => {
     expect(inv.velocity.x).toBeGreaterThan(0)
   })
 
+  /**
+   * Spec: "Each invader gets a randomly assigned sprite template from the pool"
+   * Invaders must carry a spriteIndex for rendering variety.
+   */
+  it('assigns a spriteIndex on creation', () => {
+    const inv = createInvader({ char: 'a', position: { x: 0, y: 300 }, center: CENTER, speed: 1 })
+    expect(typeof inv.spriteIndex).toBe('number')
+    expect(inv.spriteIndex).toBeGreaterThanOrEqual(0)
+  })
+
   it('normalizes velocity to given speed', () => {
     const inv = createInvader({ char: 'a', position: { x: 0, y: 0 }, center: CENTER, speed: 5 })
     const magnitude = Math.sqrt(inv.velocity.x ** 2 + inv.velocity.y ** 2)
     expect(magnitude).toBeCloseTo(5, 1)
+  })
+
+  /**
+   * Each invader needs a unique stable ID for React key reconciliation.
+   * Without this, GameBoard uses indexOf (O(N²)) and indices that recycle
+   * when dead invaders are purged between waves.
+   */
+  it('assigns a unique id to each invader', () => {
+    const inv1 = createInvader({ char: 'a', position: { x: 0, y: 300 }, center: CENTER, speed: 1 })
+    const inv2 = createInvader({ char: 'b', position: { x: 100, y: 300 }, center: CENTER, speed: 1 })
+    expect(typeof inv1.id).toBe('number')
+    expect(typeof inv2.id).toBe('number')
+    expect(inv1.id).not.toBe(inv2.id)
   })
 })
 
@@ -68,6 +93,20 @@ describe('spawnWave', () => {
     ]
     const focusCount = allChars.filter((c) => ['a', 's', 'd'].includes(c)).length
     expect(focusCount).toBeGreaterThan(0)
+  })
+
+  /**
+   * Defensive: if focusKeys is somehow empty (corrupted localStorage, test edge case),
+   * spawnWave should fall back to home row keys rather than generating undefined chars.
+   */
+  it('does not produce undefined invader chars when focusKeys is empty', () => {
+    let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: [] })
+    state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 2 })
+    const allChars = [
+      ...state.invaders.map((i) => i.char),
+      ...state.pendingSpawns.map((p) => p.char),
+    ]
+    expect(allChars.every((c) => typeof c === 'string' && c.length === 1)).toBe(true)
   })
 })
 
@@ -136,6 +175,80 @@ describe('checkCollisions', () => {
     expect(state.grapes).toBe(0)
     expect(state.roundOver).toBe(true)
     expect(result.collisions[0].grapeLost).toBe(true)
+  })
+
+  /**
+   * Spec: "invader is absorbed when it enters a fixed radius around the screen center
+   * (the cluster's visual bounding radius + small margin)."
+   * CLUSTER_COLLISION_RADIUS must match the grape cluster visual (.grape-cluster width: 120px → radius 60px).
+   */
+  it('CLUSTER_COLLISION_RADIUS matches the grape cluster visual boundary', () => {
+    // .grape-cluster CSS width is 120px → bounding radius = 60px
+    expect(CLUSTER_COLLISION_RADIUS).toBe(60)
+  })
+
+  it('detects collision for invader at cluster edge (55px from center)', () => {
+    const inv = createInvader({
+      char: 'a',
+      position: { x: CENTER.x + 55, y: CENTER.y },
+      center: CENTER,
+      speed: 1,
+    })
+    let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a'] })
+    state = { ...state, invaders: [inv] }
+
+    const result = checkCollisions(state, { center: CENTER, collisionRadius: CLUSTER_COLLISION_RADIUS })
+    expect(result.state.invaders[0].alive).toBe(false)
+  })
+})
+
+describe('spawnWave — 70/30 focus/filler split', () => {
+  /**
+   * Spec: "70% focus keys, 30% filler". With a large enough wave, the
+   * focus portion (70%) should dominate but non-focus filler chars should
+   * also appear, providing variety and preventing monotonous rounds.
+   */
+  it('includes both focus and non-focus characters in the wave', () => {
+    // Use wave 9 for a large count: 2 + 10 = 12 invaders
+    let state = createRoundState({ grapeCount: 24, totalWaves: 12, focusKeys: ['a', 's'] })
+    state = { ...state, currentWave: 9 }
+    state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 2 })
+
+    const allChars = [
+      ...state.invaders.map((i) => i.char),
+      ...state.pendingSpawns.map((p) => p.char),
+    ]
+    const total = allChars.length
+    const focusChars = allChars.filter((c) => ['a', 's'].includes(c))
+    const fillerChars = allChars.filter((c) => !['a', 's'].includes(c))
+
+    // 70% focus = ~8, 30% filler = ~4 out of 12
+    expect(focusChars.length).toBeGreaterThanOrEqual(Math.round(total * 0.7) - 1)
+    expect(fillerChars.length).toBeGreaterThan(0)
+  })
+})
+
+describe('spawnWave — calibration mode (100% focus)', () => {
+  /**
+   * Spec: 70/30 split is described under Practice Mode. Calibration rounds
+   * should be 100% focus keys to properly isolate each key group for testing.
+   * When fillerKeys is explicitly empty ([]), all spawned chars should be focus keys.
+   */
+  it('spawns only focus keys when fillerKeys is empty array (calibration)', () => {
+    let state = createRoundState({
+      grapeCount: 24, totalWaves: 8, focusKeys: ['a', 's', 'd', 'f'], fillerKeys: [],
+    })
+    state = { ...state, currentWave: 4 }
+    state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 2 })
+
+    const allChars = [
+      ...state.invaders.map((i) => i.char),
+      ...state.pendingSpawns.map((p) => p.char),
+    ]
+    expect(allChars.length).toBeGreaterThan(0)
+    for (const ch of allChars) {
+      expect(['a', 's', 'd', 'f']).toContain(ch)
+    }
   })
 })
 
@@ -254,6 +367,48 @@ describe('staggered spawning', () => {
   })
 })
 
+/**
+ * When the round ends via grapes_lost while invaders are still in the staggered
+ * spawn queue, pendingSpawns must be retained in the final state so that accuracy
+ * can be computed from only the invaders that actually appeared on screen:
+ *   accuracy = kills / (totalSpawned - pendingSpawns.length)
+ * Using totalSpawned alone would dilute accuracy with invaders the player never
+ * had a chance to interact with.
+ */
+describe('round end with pending invaders', () => {
+  it('retains pendingSpawns when round ends via grapes_lost', () => {
+    // Start at wave 4 so wave 5 spawns 7 invaders (3+4), with at least 4 pending
+    let state = createRoundState({ grapeCount: 1, totalWaves: 8, focusKeys: ['a'] })
+    state = { ...state, currentWave: 4 }
+    state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 50 })
+
+    const pendingBefore = state.pendingSpawns.length
+    expect(pendingBefore).toBeGreaterThan(0)
+
+    // Set up conditions for grapes_lost: 1 grape, 2 damage already
+    state = { ...state, grapes: 1, damageCounter: 2 }
+
+    // Move an active invader to the center to trigger collision
+    state = {
+      ...state,
+      invaders: state.invaders.map((inv, i) =>
+        i === 0 ? { ...inv, position: { x: CENTER.x, y: CENTER.y } } : inv,
+      ),
+    }
+
+    const result = checkCollisions(state, { center: CENTER, collisionRadius: 30 })
+    state = result.state
+
+    expect(state.roundOver).toBe(true)
+    expect(state.roundResult).toBe('grapes_lost')
+    // Pending invaders are still in the state — not cleared on round end
+    expect(state.pendingSpawns.length).toBe(pendingBefore)
+    // Accuracy should use appeared count, not totalSpawned
+    const appearedCount = state.totalSpawned - state.pendingSpawns.length
+    expect(appearedCount).toBeLessThan(state.totalSpawned)
+  })
+})
+
 describe('handleKeyPress', () => {
   it('destroys the nearest matching alive invader', () => {
     const far = createInvader({ char: 'a', position: { x: 0, y: 300 }, center: CENTER, speed: 1 })
@@ -307,5 +462,74 @@ describe('handleKeyPress', () => {
     expect(result.state.invaders[0].alive).toBe(false) // was already dead
     expect(result.state.invaders[1].alive).toBe(false) // newly destroyed
     expect(result.hit).toBe(true)
+  })
+})
+
+/**
+ * Spec: "changes apply immediately for speed" — when the user changes the
+ * speed preset during gameplay, all alive invaders and pending spawns must
+ * rescale their velocity/speed to the new effective speed (base + escalation).
+ */
+describe('rescaleInvaderSpeeds', () => {
+  it('rescales alive invaders to new base speed with wave escalation', () => {
+    const inv = createInvader({ char: 'a', position: { x: 0, y: 300 }, center: CENTER, speed: 50 })
+    let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a'] })
+    state = { ...state, invaders: [inv], currentWave: 1 }
+
+    const oldMag = Math.sqrt(inv.velocity.x ** 2 + inv.velocity.y ** 2)
+    expect(oldMag).toBeCloseTo(50, 0)
+
+    state = rescaleInvaderSpeeds(state, 80)
+
+    const newMag = Math.sqrt(
+      state.invaders[0].velocity.x ** 2 + state.invaders[0].velocity.y ** 2,
+    )
+    // Wave 1, escalation = 0, so effective = 80
+    expect(newMag).toBeCloseTo(80, 0)
+  })
+
+  it('includes wave escalation in rescaled speed', () => {
+    const inv = createInvader({ char: 'a', position: { x: 0, y: 300 }, center: CENTER, speed: 60 })
+    let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a'] })
+    // Wave 3 → escalation = (3-1)*5 = 10
+    state = { ...state, invaders: [inv], currentWave: 3 }
+
+    state = rescaleInvaderSpeeds(state, 50)
+
+    const newMag = Math.sqrt(
+      state.invaders[0].velocity.x ** 2 + state.invaders[0].velocity.y ** 2,
+    )
+    // base 50 + escalation 10 = 60
+    expect(newMag).toBeCloseTo(60, 0)
+  })
+
+  it('updates pending spawns speed', () => {
+    let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a'] })
+    state = {
+      ...state,
+      currentWave: 1,
+      pendingSpawns: [
+        { char: 'a', position: { x: 0, y: 0 }, center: CENTER, speed: 50, spawnAt: 9999 },
+      ],
+    }
+
+    state = rescaleInvaderSpeeds(state, 80)
+    // Wave 1, escalation = 0, so effective = 80
+    expect(state.pendingSpawns[0].speed).toBe(80)
+  })
+
+  it('does not modify dead invaders', () => {
+    const inv = createInvader({ char: 'a', position: { x: 0, y: 300 }, center: CENTER, speed: 50 })
+    inv.alive = false
+    let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a'] })
+    state = { ...state, invaders: [inv], currentWave: 1 }
+
+    state = rescaleInvaderSpeeds(state, 80)
+
+    // Dead invader velocity unchanged
+    const mag = Math.sqrt(
+      state.invaders[0].velocity.x ** 2 + state.invaders[0].velocity.y ** 2,
+    )
+    expect(mag).toBeCloseTo(50, 0)
   })
 })

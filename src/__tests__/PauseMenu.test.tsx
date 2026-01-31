@@ -29,8 +29,13 @@ describe('PauseMenu', () => {
     expect(onResume).toHaveBeenCalledTimes(1)
   })
 
-  it('shows current round stats', () => {
+  /**
+   * Spec lists "Current Round Stats" as a labeled section in the pause menu,
+   * showing accuracy, kills, and reaction speed for the current round.
+   */
+  it('shows current round stats with heading', () => {
     render(<PauseMenu {...defaultProps} />)
+    expect(screen.getByText(/current round stats/i)).toBeInTheDocument()
     expect(screen.getByText(/82%/)).toBeInTheDocument()
     expect(screen.getByText(/15/)).toBeInTheDocument()
     expect(screen.getByText(/280/)).toBeInTheDocument()

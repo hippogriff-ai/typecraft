@@ -10,9 +10,7 @@ describe('RoundSummary', () => {
     accuracy: 0.85,
     avgReactionMs: 320,
     roundScore: 32,
-    highScore: 47,
     isNewHighScore: false,
-    focusKeys: ['(', ')'],
     nextFocusKeys: ['{', '}'],
     onNextRound: vi.fn(),
   }
@@ -51,18 +49,37 @@ describe('RoundSummary', () => {
 
   /**
    * Spec: "Round Outcome > Keys improved / Keys declined"
-   * keysImproved shows keys that got better, keysDefined minus keysImproved = declined
+   * keysImproved and keysDeclined are computed separately — only keys whose
+   * accuracy actually dropped appear under "declined". Keys with unchanged
+   * accuracy are omitted from both lists.
    */
   it('shows keys improved and keys declined', () => {
     render(
       <RoundSummary
         {...defaultProps}
         keysImproved={['(']}
-        keysDefined={['(', ')']}
+        keysDeclined={[')']}
       />,
     )
     expect(screen.getByTestId('keys-improved')).toHaveTextContent('(')
     expect(screen.getByTestId('keys-declined')).toHaveTextContent(')')
+  })
+
+  /**
+   * Keys with unchanged accuracy between round start and end should NOT
+   * appear under "Keys declined". Only keys that actually lost accuracy
+   * are declined. This prevents misleading negative feedback.
+   */
+  it('does not show stable keys as declined', () => {
+    render(
+      <RoundSummary
+        {...defaultProps}
+        keysImproved={['(']}
+        keysDeclined={[]}
+      />,
+    )
+    expect(screen.getByTestId('keys-improved')).toHaveTextContent('(')
+    expect(screen.queryByTestId('keys-declined')).not.toBeInTheDocument()
   })
 
   it('has a next round button that calls onNextRound', async () => {

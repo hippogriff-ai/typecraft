@@ -3,7 +3,7 @@ export const WORDS: string[] = [
   'def', 'class', 'import', 'from', 'return', 'yield', 'lambda', 'if', 'elif', 'else',
   'for', 'while', 'break', 'continue', 'pass', 'try', 'except', 'finally', 'raise', 'with',
   'as', 'assert', 'async', 'await', 'del', 'global', 'nonlocal', 'in', 'is', 'not',
-  'and', 'or', 'True', 'False', 'None',
+  'and', 'or', 'true', 'false', 'none',
   // Python builtins
   'print', 'len', 'range', 'list', 'dict', 'set', 'tuple', 'str', 'int', 'float',
   'bool', 'type', 'super', 'self', 'init', 'main', 'open', 'close', 'read', 'write',
@@ -62,6 +62,14 @@ export const WORDS: string[] = [
   'drop', 'drug', 'eat', 'economy', 'edge', 'education', 'effort', 'eight', 'either', 'election',
   'employee', 'energy', 'enjoy', 'enter', 'entire', 'environment', 'especially', 'establish', 'evening',
   'everyone', 'everything', 'evidence', 'exactly', 'example', 'executive', 'exist', 'expect',
+  'experience', 'explain', 'fail', 'fall', 'far', 'father', 'fear', 'feel', 'field',
+  'fight', 'figure', 'fill', 'fine', 'financial', 'finger', 'finish', 'fire', 'firm', 'fish',
+  'five', 'floor', 'fly', 'follow', 'foot', 'force', 'foreign', 'forget', 'forward', 'four',
+  'free', 'friend', 'front', 'full', 'fund', 'future', 'garden', 'gas', 'general', 'generation',
+  'girl', 'glass', 'goal', 'gold', 'gone', 'government', 'green', 'ground', 'grow', 'growth',
+  'guess', 'gun', 'guy', 'hair', 'half', 'hang', 'happen', 'happy', 'hard',
+  'hear', 'heart', 'heavy', 'hit', 'hold', 'hope', 'hot', 'huge', 'human',
+  'hundred', 'indicate', 'image', 'impact', 'important', 'improve', 'include', 'increase', 'indeed',
 ]
 
 export const CODE_SNIPPETS: string[] = [
@@ -85,21 +93,29 @@ export const CODE_SNIPPETS: string[] = [
   'x<=y',
   'd[k]',
   '(a,b)',
+  'a/b',
+  'x;y',
+  'a;b',
 ]
 
 export function selectWordsForFocus(opts: {
   focusKeys: string[]
   count: number
 }): string[] {
-  const isAllSymbols = opts.focusKeys.every(
-    (k) => !/^[a-zA-Z0-9]$/.test(k),
-  )
+  if (opts.focusKeys.length === 0) {
+    return Array.from({ length: opts.count }, () => 'a')
+  }
 
-  const pool = isAllSymbols ? CODE_SNIPPETS : WORDS
-
-  const matching = pool.filter((word) =>
+  // Search both WORDS and CODE_SNIPPETS pools, combining matches.
+  // This ensures mixed letter+symbol focus keys (e.g., ['z', ';', ','])
+  // find relevant words for letters AND code snippets for symbols.
+  const wordMatches = WORDS.filter((word) =>
     opts.focusKeys.some((key) => word.includes(key)),
   )
+  const snippetMatches = CODE_SNIPPETS.filter((snippet) =>
+    opts.focusKeys.some((key) => snippet.includes(key)),
+  )
+  const matching = [...wordMatches, ...snippetMatches]
 
   if (matching.length === 0) {
     return Array.from({ length: opts.count }, () =>

@@ -38,7 +38,7 @@ describe('StatsScreen', () => {
     const user = userEvent.setup()
     render(<StatsScreen keyStats={keyStats} onBack={vi.fn()} />)
 
-    await user.click(screen.getByRole('columnheader', { name: /accuracy/i }))
+    await user.click(screen.getByRole('columnheader', { name: /^accuracy %$/i }))
 
     const rows = screen.getAllByTestId(/^stat-row-/)
     expect(within(rows[0]).getByText('(')).toBeInTheDocument()
@@ -80,6 +80,69 @@ describe('StatsScreen', () => {
     expect(improvingTrend.style.color).toContain('green')
     expect(decliningTrend.style.color).toContain('red')
     expect(stableTrend.style.color).toContain('grey')
+  })
+
+  /**
+   * Spec: "Sortable by any column" — the Trend column must be sortable too.
+   * Sorting by trend should order: declining (-1) → stable (0) → improving (1) ascending.
+   */
+  it('sorts by trend column when header is clicked', async () => {
+    const user = userEvent.setup()
+    render(<StatsScreen keyStats={keyStats} onBack={vi.fn()} />)
+
+    await user.click(screen.getByRole('columnheader', { name: /trend/i }))
+
+    const rows = screen.getAllByTestId(/^stat-row-/)
+    // Ascending: declining (-1) first → stable (0) → improving (1)
+    expect(within(rows[0]).getByText('(')).toBeInTheDocument() // declining
+    expect(within(rows[1]).getByText('5')).toBeInTheDocument() // stable
+    expect(within(rows[2]).getByText('a')).toBeInTheDocument() // improving
+  })
+
+  /**
+   * Spec: "Session-level stats (total rounds, total time)" under Stored Data.
+   * The stats screen should display lifetime round count and total play time.
+   */
+  it('displays session-level stats (total rounds and total play time)', () => {
+    render(<StatsScreen keyStats={keyStats} onBack={vi.fn()} totalRounds={42} totalPlayTimeMs={7380000} />)
+    expect(screen.getByText(/42 rounds/i)).toBeInTheDocument()
+    // 7380000ms = 2h 3m
+    expect(screen.getByText(/2h 3m/)).toBeInTheDocument()
+  })
+
+  /**
+   * Keys with 0 kills should show "—" for speed metrics (avg speed, best speed)
+   * since "0ms" implies instant reaction time rather than "no data".
+   */
+  it('shows dash instead of 0ms for keys with no kills', () => {
+    const stats = [
+      { key: 'z', accuracy: 0, avgSpeedMs: 0, totalKills: 0, bestAccuracy: 0, bestSpeedMs: 0, trend: 'stable' as const },
+    ]
+    render(<StatsScreen keyStats={stats} onBack={vi.fn()} />)
+    const row = screen.getByTestId('stat-row-z')
+    const cells = within(row).getAllByRole('cell')
+    // cells: key, accuracy, avg speed, kills, best acc, best speed, trend
+    expect(cells[2]).toHaveTextContent('—')  // avg speed
+    expect(cells[5]).toHaveTextContent('—')  // best speed
+  })
+
+  /** Shows "—" for bestAccuracy when not enough data (< 10 attempts, bestAccuracy = 0). */
+  it('shows dash for bestAccuracy when value is zero', () => {
+    const stats = [
+      { key: 'a', accuracy: 0.5, avgSpeedMs: 200, totalKills: 3, bestAccuracy: 0, bestSpeedMs: 200, trend: 'stable' as const },
+    ]
+    render(<StatsScreen keyStats={stats} onBack={vi.fn()} />)
+    const row = screen.getByTestId('stat-row-a')
+    const cells = within(row).getAllByRole('cell')
+    // cells: key, accuracy, avg speed, kills, best acc, best speed, trend
+    expect(cells[4]).toHaveTextContent('—') // bestAccuracy = 0 → dash
+  })
+
+  /** Displays a helpful message when no key data exists (e.g., first launch). */
+  it('shows empty state message when no key stats exist', () => {
+    render(<StatsScreen keyStats={[]} onBack={vi.fn()} />)
+    expect(screen.getByTestId('stats-empty')).toHaveTextContent('No data yet')
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
 
   it('has a back button', async () => {

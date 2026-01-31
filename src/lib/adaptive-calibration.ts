@@ -27,10 +27,10 @@ export function recordCalibrationResult(
     const accuracy = last10.filter(Boolean).length / 10
 
     if (accuracy > 0.9) {
-      currentSpeed = currentSpeed * 1.1
+      currentSpeed = Math.min(currentSpeed * 1.1, tracker.baseSpeed * 2)
       adjustmentCount++
     } else if (accuracy < 0.5) {
-      currentSpeed = currentSpeed * 0.9
+      currentSpeed = Math.max(currentSpeed * 0.9, tracker.baseSpeed * 0.5)
       adjustmentCount++
     }
   }

@@ -18,8 +18,8 @@ export function HUD(props: HUDProps) {
     props.learningSpeed === null
       ? '\u2014'
       : props.learningSpeed > 0
-        ? `+${props.learningSpeed}`
-        : `${props.learningSpeed}`
+        ? `+${props.learningSpeed}/5rnd`
+        : `${props.learningSpeed}/5rnd`
 
   return (
     <div data-testid="hud">
@@ -33,6 +33,7 @@ export function HUD(props: HUDProps) {
         <button onClick={props.onRecalibrate} aria-label="Recalibrate">Recal</button>
       </div>
       <div data-testid="weak-keys" className="weak-keys">
+        <span className="weak-label">Weak:</span>
         {props.weakKeys.map((key) => (
           <span key={key} className="weak-key-badge">
             {key}
@@ -42,10 +43,10 @@ export function HUD(props: HUDProps) {
       <div className="hud-bottom">
         <span data-testid="round-name">{props.roundName}</span>
         <span data-testid="wave-progress">
-          {props.currentWave}/{props.totalWaves}
+          Wave {Math.max(1, props.currentWave)}/{props.totalWaves}
         </span>
         <span data-testid="grape-count">
-          {props.grapes}/{props.maxGrapes}
+          Grapes: {props.grapes}/{props.maxGrapes}
         </span>
       </div>
     </div>

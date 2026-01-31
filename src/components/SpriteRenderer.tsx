@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import type { SpriteTemplate } from '../lib/sprites'
 
 interface SpriteRendererProps {
@@ -7,7 +8,7 @@ interface SpriteRendererProps {
   size?: number
 }
 
-export function SpriteRenderer({ template, primaryColor, secondaryColor, size = 32 }: SpriteRendererProps) {
+export const SpriteRenderer = memo(function SpriteRenderer({ template, primaryColor, secondaryColor, size = 32 }: SpriteRendererProps) {
   const cols = template[0]?.length ?? 0
   const rows = template.length
   const cellSize = size / Math.max(cols, rows)
@@ -41,4 +42,4 @@ export function SpriteRenderer({ template, primaryColor, secondaryColor, size = 
       )}
     </div>
   )
-}
+})

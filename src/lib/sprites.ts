@@ -6,10 +6,6 @@ export interface CharColor {
   category: 'letter' | 'symbol' | 'number'
 }
 
-export interface AssignedSprite {
-  template: SpriteTemplate
-  color: CharColor
-}
 
 export const SPRITE_TEMPLATES: SpriteTemplate[] = [
   // 8x8 pixel art invader templates
@@ -223,9 +219,4 @@ export function getCharColor(char: string, mode: ColorBlindMode = 'none'): CharC
   return palette.symbol[Math.floor(Math.random() * palette.symbol.length)]
 }
 
-export function assignSprite(char: string): AssignedSprite {
-  const template =
-    SPRITE_TEMPLATES[Math.floor(Math.random() * SPRITE_TEMPLATES.length)]
-  const color = getCharColor(char)
-  return { template, color }
-}
+

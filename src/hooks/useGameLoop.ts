@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { useState, useCallback, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import type { RoundState, Vec2, CollisionEvent } from '../lib/game-engine'
 import {
   tickInvaders,
@@ -7,6 +7,8 @@ import {
   spawnWave,
   checkRoundComplete,
   releasePendingSpawns,
+  rescaleInvaderSpeeds,
+  CLUSTER_COLLISION_RADIUS,
 } from '../lib/game-engine'
 import { createCalibrationTracker, recordCalibrationResult, getAdaptedSpeed } from '../lib/adaptive-calibration'
 import type { CalibrationTracker } from '../lib/adaptive-calibration'
@@ -29,12 +31,17 @@ export function useGameLoop(props: UseGameLoopProps) {
   const propsRef = useRef(props)
   const tickRef = useRef<((timestamp: number) => void) | undefined>(undefined)
   const calibrationTrackerRef = useRef<CalibrationTracker>(createCalibrationTracker(props.baseSpeed ?? 50))
+  const prevSpeedRef = useRef<number>(props.baseSpeed ?? 50)
 
-  useEffect(() => {
+  // useLayoutEffect ensures refs are updated synchronously after React commits,
+  // BEFORE the browser paints or fires rAF callbacks. This prevents a race where
+  // the tick function reads stale state from stateRef when startNewRound() and
+  // gameLoop.start() fire as passive effects in the same render cycle.
+  useLayoutEffect(() => {
     propsRef.current = props
   })
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     stateRef.current = props.roundState
   }, [props.roundState])
 
@@ -51,21 +58,29 @@ export function useGameLoop(props: UseGameLoopProps) {
       if (lastTimeRef.current === 0) {
         lastTimeRef.current = timestamp
       }
-      const deltaSeconds = (timestamp - lastTimeRef.current) / 1000
+      // Cap delta to prevent invader teleportation after tab-switch or long pause.
+      // Standard game-loop practice: discard accumulated time beyond 100ms.
+      const deltaSeconds = Math.min((timestamp - lastTimeRef.current) / 1000, 0.1)
       lastTimeRef.current = timestamp
 
       let state = stateRef.current
       const { onRoundEnd, onStateChange, onCollisions, boardSize, baseSpeed = 50 } = propsRef.current
+
+      // Spec: "changes apply immediately for speed" — rescale existing invaders
+      if (baseSpeed !== prevSpeedRef.current) {
+        state = rescaleInvaderSpeeds(state, baseSpeed)
+        prevSpeedRef.current = baseSpeed
+      }
 
       state = releasePendingSpawns(state, Date.now())
 
       state = tickInvaders(state, {
         deltaSeconds,
         center,
-        collisionRadius: 30,
+        collisionRadius: CLUSTER_COLLISION_RADIUS,
       })
 
-      const collisionResult = checkCollisions(state, { center, collisionRadius: 30 })
+      const collisionResult = checkCollisions(state, { center, collisionRadius: CLUSTER_COLLISION_RADIUS })
       state = collisionResult.state
       if (collisionResult.collisions.length > 0 && onCollisions) {
         onCollisions(collisionResult.collisions)
@@ -103,22 +118,18 @@ export function useGameLoop(props: UseGameLoopProps) {
   const start = useCallback(() => {
     setRunning(true)
     lastTimeRef.current = 0
-    calibrationTrackerRef.current = createCalibrationTracker(propsRef.current.baseSpeed ?? 50)
 
-    let state = stateRef.current
-    if (state.currentWave === 0) {
-      state = spawnWave(state, {
-        center,
-        boardWidth: propsRef.current.boardSize.width,
-        boardHeight: propsRef.current.boardSize.height,
-        speed: propsRef.current.baseSpeed ?? 50,
-      })
-      stateRef.current = state
-      propsRef.current.onStateChange(state)
+    // Only reset calibration tracker at round start, not on resume from pause
+    if (stateRef.current.currentWave === 0) {
+      calibrationTrackerRef.current = createCalibrationTracker(propsRef.current.baseSpeed ?? 50)
     }
 
+    // First-wave spawn is handled by the tick function (allResolved && currentWave < totalWaves).
+    // Spawning here would race with startNewRound(): both run as effects in the same render,
+    // and stateRef still holds the previous round's state. Deferring to tick ensures stateRef
+    // reflects the correct focusKeys from startNewRound() by the time rAF fires.
     rafRef.current = requestAnimationFrame((ts) => tickRef.current?.(ts))
-  }, [center])
+  }, [])
 
   const stop = useCallback(() => {
     setRunning(false)
@@ -127,6 +138,12 @@ export function useGameLoop(props: UseGameLoopProps) {
 
   const handleKey = useCallback(
     (key: string) => {
+      // Don't process keypresses after round has ended — the React state update
+      // (setRoundEndResult) batches, so the keydown handler may still fire before
+      // the guard in App.tsx sees roundEndResult !== null.
+      if (stateRef.current.roundOver) {
+        return { state: stateRef.current, hit: false }
+      }
       const result = handleKeyPress(stateRef.current, key, center, Date.now())
       stateRef.current = result.state
       propsRef.current.onStateChange(result.state)
@@ -144,14 +161,22 @@ export function useGameLoop(props: UseGameLoopProps) {
     [center],
   )
 
+  // Directly write a new round state to stateRef, bypassing React's async batching.
+  // Called from startNewRound() so the first rAF tick sees the correct focusKeys
+  // even before React re-renders with the new roundState.
+  const resetState = useCallback((newState: RoundState) => {
+    stateRef.current = newState
+  }, [])
+
   useEffect(() => {
     return () => cancelAnimationFrame(rafRef.current)
   }, [])
 
-  return {
+  return useMemo(() => ({
     running,
     start,
     stop,
     handleKeyPress: handleKey,
-  }
+    resetState,
+  }), [running, start, stop, handleKey, resetState])
 }

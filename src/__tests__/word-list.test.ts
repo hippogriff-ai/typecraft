@@ -12,6 +12,16 @@ describe('WORDS', () => {
     expect(WORDS.length).toBeLessThanOrEqual(700)
   })
 
+  /**
+   * All words must be lowercase. Invader chars are compared directly to
+   * lowercased keypress input, so uppercase chars create unhittable invaders.
+   */
+  it('contains only lowercase characters', () => {
+    for (const word of WORDS) {
+      expect(word).toBe(word.toLowerCase())
+    }
+  })
+
   it('includes Python keywords', () => {
     const pythonKeywords = ['def', 'class', 'import', 'return', 'yield', 'lambda', 'if', 'else', 'for', 'while']
     for (const kw of pythonKeywords) {
@@ -58,5 +68,38 @@ describe('selectWordsForFocus', () => {
   it('falls back to individual characters when no words match', () => {
     const words = selectWordsForFocus({ focusKeys: ['@'], count: 3 })
     expect(words.length).toBe(3)
+  })
+
+  /**
+   * When focus keys are a mix of letters and symbols (e.g., ['z', ';', ',']),
+   * the old implementation searched only WORDS (because 'z' is alphanumeric).
+   * But WORDS don't contain symbols like ';' or ',', so those focus keys
+   * never appeared in word-derived batches. Fix: always search both pools
+   * (WORDS + CODE_SNIPPETS), combining matches so symbol-containing snippets
+   * like 'a,b' and 'x;y' are included alongside letter-containing words.
+   */
+  it('finds matches from both WORDS and CODE_SNIPPETS for mixed letter+symbol focus keys', () => {
+    const words = selectWordsForFocus({ focusKeys: ['z', ',', '.'], count: 20 })
+    expect(words.length).toBe(20)
+    // Should contain at least some snippet matches (for ',' and '.')
+    // and some word matches (for 'z')
+    const hasSnippetMatch = words.some((w) => w.includes(',') || w.includes('.'))
+    const hasWordMatch = words.some((w) => w.includes('z'))
+    expect(hasSnippetMatch).toBe(true)
+    expect(hasWordMatch).toBe(true)
+  })
+
+  /**
+   * Empty focusKeys could happen if practice round selection fails or state
+   * is corrupted. Without a guard, Math.random() * 0 = NaN, producing
+   * undefined values in the returned array.
+   */
+  it('returns valid strings when focusKeys is empty', () => {
+    const words = selectWordsForFocus({ focusKeys: [], count: 3 })
+    expect(words.length).toBe(3)
+    for (const word of words) {
+      expect(typeof word).toBe('string')
+      expect(word.length).toBeGreaterThan(0)
+    }
   })
 })

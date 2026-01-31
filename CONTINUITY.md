@@ -50,12 +50,17 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - **Playtested in browser**: explosions working, full gameplay flow confirmed
 - **E2E testing**: 13 Playwright tests covering all critical user flows (menu, demo, calibration, gameplay, pause, quit, settings, stats, persistence, HUD)
 - **Vitest exclude e2e/**: vite.config.ts excludes e2e/ from Vitest to avoid Playwright conflicts
+- **Absorb animation**: red flash + dissolve inward at collision point (400ms CSS animation)
+- **Grape burst animation**: 6 juice droplet particles spray outward when grape lost (500ms CSS animation)
+- **checkCollisions returns CollisionEvent[]**: position + grapeLost flag for animation triggers
+- **166 unit tests, 13 E2E tests, build clean, lint clean**
 
 ### Now
-- Iteration 8: visual polish
+- All plan TODO items complete. Ready for next iteration.
 
 ### Next
-- Visual polish (absorb animation, grape burst animation)
+- Bug hunting and polish
+- Additional visual polish or gameplay tuning
 
 ## Open Questions
 - None

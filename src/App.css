@@ -116,6 +116,7 @@
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #9b4dca, #6b2fa0 50%, #2d1050);
   box-shadow: inset -2px -2px 4px rgba(0, 0, 0, 0.4), 0 0 3px rgba(107, 47, 160, 0.5);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Explosions */

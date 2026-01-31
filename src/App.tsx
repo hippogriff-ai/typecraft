@@ -9,7 +9,7 @@ import { SPEED_PRESETS } from './lib/settings'
 import { getCharColor } from './lib/sprites'
 import type { Settings } from './lib/settings'
 import { GameBoard } from './components/GameBoard'
-import type { Explosion } from './components/GameBoard'
+import type { Explosion, AbsorbEffect, GrapeBurst } from './components/GameBoard'
 import { HUD } from './components/HUD'
 import { MainMenu } from './components/MainMenu'
 import { OnboardingDemo } from './components/OnboardingDemo'
@@ -50,7 +50,11 @@ function App() {
 
   const [accuracyRing, setAccuracyRing] = useState<AccuracyRing>(() => createAccuracyRing())
   const [explosions, setExplosions] = useState<Explosion[]>([])
+  const [absorbs, setAbsorbs] = useState<AbsorbEffect[]>([])
+  const [grapeBursts, setGrapeBursts] = useState<GrapeBurst[]>([])
   const explosionIdRef = useRef(0)
+  const absorbIdRef = useRef(0)
+  const grapeBurstIdRef = useRef(0)
 
   const [roundState, setRoundState] = useState<RoundState>(() =>
     createRoundState({
@@ -73,6 +77,18 @@ function App() {
     setShowRoundSummary(false)
     setAccuracyRing(createAccuracyRing())
   }, [gameState.focusKeys, settings])
+
+  const handleCollisions = useCallback((events: import('./lib/game-engine').CollisionEvent[]) => {
+    const now = Date.now()
+    for (const ev of events) {
+      const absorbId = absorbIdRef.current++
+      setAbsorbs((prev) => [...prev, { id: absorbId, x: ev.position.x, y: ev.position.y, createdAt: now }])
+      if (ev.grapeLost) {
+        const burstId = grapeBurstIdRef.current++
+        setGrapeBursts((prev) => [...prev, { id: burstId, createdAt: now }])
+      }
+    }
+  }, [])
 
   const handleRoundEnd = useCallback(
     (state: RoundState) => {
@@ -132,6 +148,26 @@ function App() {
     return () => clearTimeout(timer)
   }, [explosions])
 
+  // Cleanup absorb effects after 400ms
+  useEffect(() => {
+    if (absorbs.length === 0) return
+    const timer = setTimeout(() => {
+      const now = Date.now()
+      setAbsorbs((prev) => prev.filter((e) => now - e.createdAt < 400))
+    }, 450)
+    return () => clearTimeout(timer)
+  }, [absorbs])
+
+  // Cleanup grape bursts after 500ms
+  useEffect(() => {
+    if (grapeBursts.length === 0) return
+    const timer = setTimeout(() => {
+      const now = Date.now()
+      setGrapeBursts((prev) => prev.filter((e) => now - e.createdAt < 500))
+    }, 550)
+    return () => clearTimeout(timer)
+  }, [grapeBursts])
+
   const handleStateChange = useCallback((state: RoundState) => {
     setRoundState(state)
   }, [])
@@ -142,6 +178,7 @@ function App() {
     roundState,
     onRoundEnd: handleRoundEnd,
     onStateChange: handleStateChange,
+    onCollisions: handleCollisions,
     boardSize: viewportSize,
     baseSpeed,
   })
@@ -261,7 +298,7 @@ function App() {
               onRecalibrate={gameState.recalibrate}
               onOpenSettings={gameState.goToSettings}
             />
-            <GameBoard roundState={roundState} accuracyRing={accuracyRing} boardSize={viewportSize} explosions={explosions} onKeyPress={gameLoop.handleKeyPress} />
+            <GameBoard roundState={roundState} accuracyRing={accuracyRing} boardSize={viewportSize} explosions={explosions} absorbs={absorbs} grapeBursts={grapeBursts} onKeyPress={gameLoop.handleKeyPress} />
 
             {paused && (
               <PauseMenu

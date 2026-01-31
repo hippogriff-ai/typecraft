@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import type { RoundState, Vec2 } from '../lib/game-engine'
+import type { RoundState, Vec2, CollisionEvent } from '../lib/game-engine'
 import {
   tickInvaders,
   checkCollisions,
@@ -13,6 +13,7 @@ export interface UseGameLoopProps {
   roundState: RoundState
   onRoundEnd: (state: RoundState) => void
   onStateChange: (state: RoundState) => void
+  onCollisions?: (events: CollisionEvent[]) => void
   boardSize: { width: number; height: number }
   baseSpeed?: number
 }
@@ -50,7 +51,7 @@ export function useGameLoop(props: UseGameLoopProps) {
       lastTimeRef.current = timestamp
 
       let state = stateRef.current
-      const { onRoundEnd, onStateChange, boardSize, baseSpeed = 50 } = propsRef.current
+      const { onRoundEnd, onStateChange, onCollisions, boardSize, baseSpeed = 50 } = propsRef.current
 
       state = releasePendingSpawns(state, Date.now())
 
@@ -60,7 +61,11 @@ export function useGameLoop(props: UseGameLoopProps) {
         collisionRadius: 30,
       })
 
-      state = checkCollisions(state, { center, collisionRadius: 30 })
+      const collisionResult = checkCollisions(state, { center, collisionRadius: 30 })
+      state = collisionResult.state
+      if (collisionResult.collisions.length > 0 && onCollisions) {
+        onCollisions(collisionResult.collisions)
+      }
       state = checkRoundComplete(state)
 
       if (state.roundOver) {

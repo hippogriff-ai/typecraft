@@ -100,10 +100,13 @@ describe('checkCollisions', () => {
     let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a'] })
     state = { ...state, invaders: [inv] }
 
-    state = checkCollisions(state, { center: CENTER, collisionRadius: 30 })
+    const result = checkCollisions(state, { center: CENTER, collisionRadius: 30 })
+    state = result.state
 
     expect(state.invaders[0].alive).toBe(false)
     expect(state.damageCounter).toBe(1)
+    expect(result.collisions).toHaveLength(1)
+    expect(result.collisions[0].grapeLost).toBe(false)
   })
 
   it('drops a grape every 3 damage', () => {
@@ -112,10 +115,12 @@ describe('checkCollisions', () => {
 
     const inv = createInvader({ char: 'a', position: { x: 400, y: 300 }, center: CENTER, speed: 1 })
     state = { ...state, invaders: [inv] }
-    state = checkCollisions(state, { center: CENTER, collisionRadius: 30 })
+    const result = checkCollisions(state, { center: CENTER, collisionRadius: 30 })
+    state = result.state
 
     expect(state.damageCounter).toBe(3)
     expect(state.grapes).toBe(23)
+    expect(result.collisions[0].grapeLost).toBe(true)
   })
 
   it('sets roundOver when grapes reach 0', () => {
@@ -125,10 +130,12 @@ describe('checkCollisions', () => {
 
     const inv = createInvader({ char: 'a', position: { x: 400, y: 300 }, center: CENTER, speed: 1 })
     state = { ...state, invaders: [inv] }
-    state = checkCollisions(state, { center: CENTER, collisionRadius: 30 })
+    const result = checkCollisions(state, { center: CENTER, collisionRadius: 30 })
+    state = result.state
 
     expect(state.grapes).toBe(0)
     expect(state.roundOver).toBe(true)
+    expect(result.collisions[0].grapeLost).toBe(true)
   })
 })
 

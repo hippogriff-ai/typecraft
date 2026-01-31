@@ -230,33 +230,45 @@ export function tickInvaders(
   return { ...state, invaders }
 }
 
+export interface CollisionEvent {
+  position: Vec2
+  grapeLost: boolean
+}
+
 export function checkCollisions(
   state: RoundState,
   opts: { center: Vec2; collisionRadius: number },
-): RoundState {
+): { state: RoundState; collisions: CollisionEvent[] } {
   let damageCounter = state.damageCounter
   let grapes = state.grapes
   let roundOver = state.roundOver
   let roundResult = state.roundResult
+  const collisions: CollisionEvent[] = []
 
   const invaders = state.invaders.map((inv) => {
     if (!inv.alive) return inv
     const dist = distance(inv.position, opts.center)
     if (dist <= opts.collisionRadius) {
       damageCounter++
+      let grapeLost = false
       if (damageCounter % 3 === 0) {
         grapes = Math.max(0, grapes - 1)
+        grapeLost = true
       }
       if (grapes <= 0) {
         roundOver = true
         roundResult = 'grapes_lost'
       }
+      collisions.push({ position: { ...inv.position }, grapeLost })
       return { ...inv, alive: false }
     }
     return inv
   })
 
-  return { ...state, invaders, damageCounter, grapes, roundOver, roundResult }
+  return {
+    state: { ...state, invaders, damageCounter, grapes, roundOver, roundResult },
+    collisions,
+  }
 }
 
 export function handleKeyPress(

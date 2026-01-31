@@ -10,11 +10,25 @@ export interface Explosion {
   createdAt: number
 }
 
+export interface AbsorbEffect {
+  id: number
+  x: number
+  y: number
+  createdAt: number
+}
+
+export interface GrapeBurst {
+  id: number
+  createdAt: number
+}
+
 interface GameBoardProps {
   roundState: RoundState
   accuracyRing?: AccuracyRing
   boardSize?: { width: number; height: number }
   explosions?: Explosion[]
+  absorbs?: AbsorbEffect[]
+  grapeBursts?: GrapeBurst[]
   onKeyPress: (key: string) => void
 }
 
@@ -25,7 +39,10 @@ function distanceToCenter(pos: Vec2, center: Vec2): number {
 // 8 particles per explosion, evenly distributed around a circle
 const PARTICLE_ANGLES = Array.from({ length: 8 }, (_, i) => (i * Math.PI * 2) / 8)
 
-export function GameBoard({ roundState, accuracyRing, boardSize, explosions, onKeyPress }: GameBoardProps) {
+// 6 juice droplets for grape burst, spread upward/outward
+const DROPLET_ANGLES = Array.from({ length: 6 }, (_, i) => -Math.PI / 2 + (i - 2.5) * 0.4)
+
+export function GameBoard({ roundState, accuracyRing, boardSize, explosions, absorbs, grapeBursts, onKeyPress }: GameBoardProps) {
   const w = boardSize?.width ?? 800
   const h = boardSize?.height ?? 600
   const center: Vec2 = { x: w / 2, y: h / 2 }
@@ -121,6 +138,35 @@ export function GameBoard({ roundState, accuracyRing, boardSize, explosions, onK
                 '--dx': `${Math.cos(angle) * 40}px`,
                 '--dy': `${Math.sin(angle) * 40}px`,
                 background: exp.color,
+              } as React.CSSProperties}
+            />
+          ))}
+        </div>
+      ))}
+
+      {absorbs?.map((ab) => (
+        <div
+          key={ab.id}
+          data-testid={`absorb-${ab.id}`}
+          className="absorb-effect"
+          style={{ position: 'absolute', left: ab.x, top: ab.y, pointerEvents: 'none' }}
+        />
+      ))}
+
+      {grapeBursts?.map((burst) => (
+        <div
+          key={burst.id}
+          data-testid={`grape-burst-${burst.id}`}
+          className="grape-burst"
+          style={{ pointerEvents: 'none' }}
+        >
+          {DROPLET_ANGLES.map((angle, i) => (
+            <div
+              key={i}
+              className="grape-droplet"
+              style={{
+                '--dx': `${Math.cos(angle) * 25}px`,
+                '--dy': `${Math.sin(angle) * 35}px`,
               } as React.CSSProperties}
             />
           ))}

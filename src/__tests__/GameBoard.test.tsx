@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { GameBoard } from '../components/GameBoard'
-import type { Explosion } from '../components/GameBoard'
+import type { Explosion, AbsorbEffect, GrapeBurst } from '../components/GameBoard'
 import { createInvader, createRoundState } from '../lib/game-engine'
 import { createAccuracyRing, recordMiss } from '../lib/accuracy-ring'
 
@@ -115,5 +115,38 @@ describe('GameBoard', () => {
 
     expect(screen.getByTestId('explosion-1')).toBeInTheDocument()
     expect(screen.getByTestId('explosion-2')).toBeInTheDocument()
+  })
+
+  /**
+   * Spec: "Absorb animation: brief red flash, sprite dissolves inward"
+   * Verifies absorb effect renders at collision position.
+   */
+  it('renders absorb effect when invader reaches grape cluster', () => {
+    const state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a'] })
+    const absorbs: AbsorbEffect[] = [
+      { id: 1, x: 400, y: 300, createdAt: Date.now() },
+    ]
+
+    render(<GameBoard roundState={state} absorbs={absorbs} onKeyPress={vi.fn()} />)
+
+    expect(screen.getByTestId('absorb-1')).toBeInTheDocument()
+    expect(screen.getByTestId('absorb-1')).toHaveClass('absorb-effect')
+  })
+
+  /**
+   * Spec: "Burst animation: sphere squashes, splits into juice droplets"
+   * Verifies grape burst animation renders with droplet particles.
+   */
+  it('renders grape burst with juice droplets when grape is lost', () => {
+    const state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a'] })
+    const grapeBursts: GrapeBurst[] = [
+      { id: 1, createdAt: Date.now() },
+    ]
+
+    render(<GameBoard roundState={state} grapeBursts={grapeBursts} onKeyPress={vi.fn()} />)
+
+    const burstEl = screen.getByTestId('grape-burst-1')
+    expect(burstEl).toBeInTheDocument()
+    expect(burstEl.querySelectorAll('.grape-droplet')).toHaveLength(6)
   })
 })

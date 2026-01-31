@@ -1,0 +1,75 @@
+import type { KeyProfile } from './scoring'
+
+const STORAGE_KEY = 'typecraft'
+const SCHEMA_VERSION = 1
+
+export interface RoundHistoryEntry {
+  timestamp: number
+  wpm: number
+  grapesLeft: number
+  focusKeys: string[]
+}
+
+export interface CalibrationProgress {
+  completedGroups: string[]
+  complete: boolean
+}
+
+export interface AppState {
+  keyProfiles: Record<string, KeyProfile>
+  roundHistory: RoundHistoryEntry[]
+  calibrationProgress: CalibrationProgress
+  currentFocusKeys: string[]
+  mode: 'calibration' | 'practice'
+  highScore?: number
+  settings?: {
+    grapeCount: number
+    speedPreset: string
+    maxInvadersPerWave: number
+    wavesPerRound: number
+  }
+}
+
+interface StoredData extends AppState {
+  schemaVersion: number
+}
+
+export function saveState(state: AppState): void {
+  const data: StoredData = {
+    ...state,
+    schemaVersion: SCHEMA_VERSION,
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+}
+
+export function loadState(): AppState | null {
+  const raw = localStorage.getItem(STORAGE_KEY)
+  if (!raw) return null
+
+  try {
+    const data: StoredData = JSON.parse(raw)
+
+    if (data.schemaVersion !== undefined && data.schemaVersion !== SCHEMA_VERSION) {
+      localStorage.removeItem(STORAGE_KEY)
+      return null
+    }
+
+    const { schemaVersion: _, ...state } = data
+    return state
+  } catch {
+    return null
+  }
+}
+
+export function clearCalibrationData(): void {
+  const state = loadState()
+  if (!state) return
+
+  saveState({
+    ...state,
+    keyProfiles: {},
+    calibrationProgress: { completedGroups: [], complete: false },
+    currentFocusKeys: [],
+    mode: 'calibration',
+  })
+}

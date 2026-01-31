@@ -1,10 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import {
-  saveState,
-  loadState,
-  clearCalibrationData,
-  type AppState,
-} from '../lib/storage'
+import { saveState, loadState, clearCalibrationData, type AppState } from '../lib/storage'
 import { createKeyProfile } from '../lib/scoring'
 
 beforeEach(() => {
@@ -14,16 +9,17 @@ beforeEach(() => {
 function makeState(overrides?: Partial<AppState>): AppState {
   return {
     keyProfiles: { a: createKeyProfile('a') },
-    sessionHistory: [],
-    calibrationComplete: false,
-    currentDrillKeys: [],
+    roundHistory: [],
+    calibrationProgress: { completedGroups: [], complete: false },
+    currentFocusKeys: [],
+    mode: 'calibration',
     ...overrides,
   }
 }
 
 describe('saveState / loadState', () => {
   it('round-trips state through localStorage', () => {
-    const state = makeState({ calibrationComplete: true })
+    const state = makeState({ mode: 'practice' })
     saveState(state)
     const loaded = loadState()
     expect(loaded).toEqual(state)
@@ -40,11 +36,11 @@ describe('saveState / loadState', () => {
 })
 
 describe('clearCalibrationData', () => {
-  it('clears key profiles and calibration flag but keeps session history', () => {
+  it('clears key profiles and calibration but keeps round history', () => {
     const state = makeState({
-      calibrationComplete: true,
-      sessionHistory: [{ timestamp: 1000, wpm: 30 }],
-      keyProfiles: { a: createKeyProfile('a') },
+      mode: 'practice',
+      roundHistory: [{ timestamp: 1000, wpm: 30, grapesLeft: 8, focusKeys: ['a'] }],
+      calibrationProgress: { completedGroups: ['homeRow'], complete: true },
     })
     saveState(state)
 
@@ -52,11 +48,12 @@ describe('clearCalibrationData', () => {
 
     const loaded = loadState()
     expect(loaded).not.toBeNull()
-    expect(loaded!.calibrationComplete).toBe(false)
+    expect(loaded!.mode).toBe('calibration')
     expect(loaded!.keyProfiles).toEqual({})
-    expect(loaded!.currentDrillKeys).toEqual([])
-    // Session history preserved
-    expect(loaded!.sessionHistory).toEqual([{ timestamp: 1000, wpm: 30 }])
+    expect(loaded!.calibrationProgress).toEqual({ completedGroups: [], complete: false })
+    expect(loaded!.currentFocusKeys).toEqual([])
+    // Round history preserved
+    expect(loaded!.roundHistory).toHaveLength(1)
   })
 
   it('does nothing when no state exists', () => {

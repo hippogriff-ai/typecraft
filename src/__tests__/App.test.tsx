@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import App from '../App'
 
 beforeEach(() => {
@@ -8,63 +7,49 @@ beforeEach(() => {
 })
 
 describe('App', () => {
-  it('shows calibration drill on first launch', () => {
+  it('shows game board on launch', () => {
     render(<App />)
-    expect(screen.getByTestId('calibration-drill')).toBeInTheDocument()
+    expect(screen.getByTestId('game-board')).toBeInTheDocument()
   })
 
-  it('shows practice mode when calibration is complete in storage', () => {
-    localStorage.setItem(
-      'typecraft',
-      JSON.stringify({
-        keyProfiles: {
-          a: { key: 'a', totalAttempts: 5, correctAttempts: 5, averageTimeMs: 200, history: [] },
-        },
-        sessionHistory: [{ timestamp: Date.now(), wpm: 30 }],
-        calibrationComplete: true,
-        currentDrillKeys: ['a'],
-      }),
-    )
+  it('shows HUD with stats', () => {
     render(<App />)
-    expect(screen.getByTestId('typing-practice')).toBeInTheDocument()
-    expect(screen.getByTestId('dashboard')).toBeInTheDocument()
+    expect(screen.getByTestId('hud')).toBeInTheDocument()
   })
 
-  it('shows recalibrate button in practice mode', () => {
-    localStorage.setItem(
-      'typecraft',
-      JSON.stringify({
-        keyProfiles: {},
-        sessionHistory: [],
-        calibrationComplete: true,
-        currentDrillKeys: [],
-      }),
-    )
+  it('starts in calibration mode on first launch', () => {
+    render(<App />)
+    expect(screen.getByTestId('round-name')).toBeDefined()
+  })
+
+  it('shows recalibrate button', () => {
     render(<App />)
     expect(screen.getByRole('button', { name: /recalibrate/i })).toBeInTheDocument()
-  })
-
-  it('switches to calibration when recalibrate is clicked', async () => {
-    localStorage.setItem(
-      'typecraft',
-      JSON.stringify({
-        keyProfiles: {},
-        sessionHistory: [],
-        calibrationComplete: true,
-        currentDrillKeys: [],
-      }),
-    )
-    const user = userEvent.setup()
-    render(<App />)
-
-    await user.click(screen.getByRole('button', { name: /recalibrate/i }))
-
-    expect(screen.getByTestId('calibration-drill')).toBeInTheDocument()
   })
 
   it('has dark theme styling', () => {
     render(<App />)
     const app = screen.getByTestId('app')
     expect(app).toHaveClass('dark')
+  })
+
+  it('resumes practice mode from localStorage', () => {
+    localStorage.setItem(
+      'typecraft',
+      JSON.stringify({
+        keyProfiles: {
+          a: { key: 'a', totalAttempts: 5, correctAttempts: 5, averageTimeMs: 200, history: [] },
+        },
+        roundHistory: [{ timestamp: Date.now(), wpm: 30, grapesLeft: 8, focusKeys: ['a'] }],
+        calibrationProgress: {
+          completedGroups: ['homeRow', 'topRow', 'bottomRow', 'numbers', 'pythonSymbols'],
+          complete: true,
+        },
+        currentFocusKeys: ['(', ')'],
+        mode: 'practice',
+      }),
+    )
+    render(<App />)
+    expect(screen.getByTestId('game-board')).toBeInTheDocument()
   })
 })

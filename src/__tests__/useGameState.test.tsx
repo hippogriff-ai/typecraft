@@ -1,46 +1,50 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useTypeCraft } from '../hooks/useTypeCraft'
+import { useGameState } from '../hooks/useGameState'
 
 beforeEach(() => {
   localStorage.clear()
 })
 
-describe('useTypeCraft', () => {
+describe('useGameState', () => {
   it('starts in calibration mode when no saved state', () => {
-    const { result } = renderHook(() => useTypeCraft())
+    const { result } = renderHook(() => useGameState())
     expect(result.current.mode).toBe('calibration')
-    expect(result.current.calibrationComplete).toBe(false)
   })
 
-  it('resumes in practice mode when saved state has calibration complete', () => {
+  it('resumes in practice mode when calibration is complete', () => {
     localStorage.setItem(
       'typecraft',
       JSON.stringify({
         keyProfiles: {},
-        sessionHistory: [],
-        calibrationComplete: true,
-        currentDrillKeys: ['(', ')'],
+        roundHistory: [],
+        calibrationProgress: { completedGroups: [], complete: true },
+        currentFocusKeys: ['(', ')'],
+        mode: 'practice',
       }),
     )
-    const { result } = renderHook(() => useTypeCraft())
+    const { result } = renderHook(() => useGameState())
     expect(result.current.mode).toBe('practice')
-    expect(result.current.calibrationComplete).toBe(true)
   })
 
   it('provides weak keys ranked by weakness', () => {
-    const { result } = renderHook(() => useTypeCraft())
+    const { result } = renderHook(() => useGameState())
     expect(result.current.weakKeys).toEqual([])
   })
 
-  it('tracks current WPM', () => {
-    const { result } = renderHook(() => useTypeCraft())
+  it('tracks current WPM from round history', () => {
+    const { result } = renderHook(() => useGameState())
     expect(result.current.currentWPM).toBe(0)
   })
 
   it('tracks learning speed', () => {
-    const { result } = renderHook(() => useTypeCraft())
+    const { result } = renderHook(() => useGameState())
     expect(result.current.learningSpeed).toBe(0)
+  })
+
+  it('provides current round focus keys', () => {
+    const { result } = renderHook(() => useGameState())
+    expect(result.current.focusKeys).toBeDefined()
   })
 
   it('recalibrate resets to calibration mode', () => {
@@ -48,12 +52,13 @@ describe('useTypeCraft', () => {
       'typecraft',
       JSON.stringify({
         keyProfiles: {},
-        sessionHistory: [],
-        calibrationComplete: true,
-        currentDrillKeys: [],
+        roundHistory: [],
+        calibrationProgress: { completedGroups: [], complete: true },
+        currentFocusKeys: [],
+        mode: 'practice',
       }),
     )
-    const { result } = renderHook(() => useTypeCraft())
+    const { result } = renderHook(() => useGameState())
     expect(result.current.mode).toBe('practice')
 
     act(() => {
@@ -61,6 +66,5 @@ describe('useTypeCraft', () => {
     })
 
     expect(result.current.mode).toBe('calibration')
-    expect(result.current.calibrationComplete).toBe(false)
   })
 })

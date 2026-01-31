@@ -44,7 +44,7 @@ describe('accuracy ring', () => {
   })
 
   it('starts full and depletes proportionally', () => {
-    let ring = createAccuracyRing()
+    const ring = createAccuracyRing()
     const after1Miss = recordMiss(ring)
     const after2Misses = recordMiss(after1Miss)
     expect(after2Misses.value).toBeLessThan(after1Miss.value)

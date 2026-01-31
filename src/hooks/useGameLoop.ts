@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import type { RoundState, Vec2 } from '../lib/game-engine'
 import {
   tickInvaders,
@@ -22,19 +22,26 @@ export function useGameLoop(props: UseGameLoopProps) {
   const rafRef = useRef<number>(0)
   const lastTimeRef = useRef<number>(0)
   const propsRef = useRef(props)
-  propsRef.current = props
+  const tickRef = useRef<((timestamp: number) => void) | undefined>(undefined)
+
+  useEffect(() => {
+    propsRef.current = props
+  })
 
   useEffect(() => {
     stateRef.current = props.roundState
   }, [props.roundState])
 
-  const center: Vec2 = {
-    x: props.boardSize.width / 2,
-    y: props.boardSize.height / 2,
-  }
+  const center: Vec2 = useMemo(
+    () => ({
+      x: props.boardSize.width / 2,
+      y: props.boardSize.height / 2,
+    }),
+    [props.boardSize.width, props.boardSize.height],
+  )
 
-  const tick = useCallback(
-    (timestamp: number) => {
+  useEffect(() => {
+    tickRef.current = (timestamp: number) => {
       if (lastTimeRef.current === 0) {
         lastTimeRef.current = timestamp
       }
@@ -74,10 +81,9 @@ export function useGameLoop(props: UseGameLoopProps) {
 
       stateRef.current = state
       onStateChange(state)
-      rafRef.current = requestAnimationFrame(tick)
-    },
-    [center],
-  )
+      rafRef.current = requestAnimationFrame((ts) => tickRef.current?.(ts))
+    }
+  }, [center])
 
   const start = useCallback(() => {
     setRunning(true)
@@ -95,8 +101,8 @@ export function useGameLoop(props: UseGameLoopProps) {
       propsRef.current.onStateChange(state)
     }
 
-    rafRef.current = requestAnimationFrame(tick)
-  }, [center, tick])
+    rafRef.current = requestAnimationFrame((ts) => tickRef.current?.(ts))
+  }, [center])
 
   const stop = useCallback(() => {
     setRunning(false)

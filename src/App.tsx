@@ -101,7 +101,7 @@ function App() {
   const prevScreenRef = useRef(gameState.screen)
   useEffect(() => {
     if (prevScreenRef.current !== 'playing' && gameState.screen === 'playing') {
-      startNewRound()
+      startNewRound() // eslint-disable-line react-hooks/set-state-in-effect
     }
     prevScreenRef.current = gameState.screen
   }, [gameState.screen, startNewRound])
@@ -114,9 +114,10 @@ function App() {
     }
   }, [gameState.screen, paused, roundEndResult, showRoundSummary, gameLoop])
 
+  const { screen, recordKeyResult } = gameState
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (gameState.screen !== 'playing') return
+      if (screen !== 'playing') return
 
       if (e.key === 'Escape') {
         setPaused((p) => !p)
@@ -130,12 +131,12 @@ function App() {
 
       if (!paused && !roundEndResult && !showRoundSummary) {
         const result = gameLoop.handleKeyPress(e.key)
-        gameState.recordKeyResult(e.key, result.hit, result.reactionTimeMs ?? 0)
+        recordKeyResult(e.key, result.hit, result.reactionTimeMs ?? 0)
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [gameState.screen, paused, roundEndResult, showRoundSummary, gameLoop])
+  }, [screen, recordKeyResult, paused, roundEndResult, showRoundSummary, gameLoop])
 
   const roundName =
     gameState.mode === 'calibration'

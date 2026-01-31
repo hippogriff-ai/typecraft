@@ -54,6 +54,7 @@ export function loadState(): AppState | null {
       return null
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { schemaVersion: _, ...state } = data
     return state
   } catch {

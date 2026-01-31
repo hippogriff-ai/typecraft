@@ -1,3 +1,5 @@
+import { selectWordsForFocus } from './word-list'
+
 export interface Vec2 {
   x: number
   y: number
@@ -105,36 +107,40 @@ export function spawnWave(
   const rawCount = 3 + nextWave
   const count = Math.min(rawCount, state.maxInvadersPerWave)
 
-  const focusCount = Math.round(count * 0.7)
-  const fillerCount = count - focusCount
+  const words = selectWordsForFocus({ focusKeys: state.focusKeys, count: Math.ceil(count / 3) })
 
-  const newInvaders: Invader[] = []
-  for (let i = 0; i < focusCount; i++) {
+  const chars: { char: string; batchOrigin: Vec2 }[] = []
+  for (const word of words) {
+    const origin = randomEdgePosition(opts.boardWidth, opts.boardHeight)
+    for (const ch of word) {
+      chars.push({ char: ch, batchOrigin: origin })
+    }
+  }
+
+  // Trim or pad to exact count, maintaining focus bias
+  while (chars.length > count) {
+    chars.pop()
+  }
+  while (chars.length < count) {
     const char = state.focusKeys[Math.floor(Math.random() * state.focusKeys.length)]
-    const position = randomEdgePosition(opts.boardWidth, opts.boardHeight)
-    newInvaders.push(
-      createInvader({
-        char,
-        position,
-        center: opts.center,
-        speed: effectiveSpeed,
-        spawnTime: Date.now(),
-      }),
-    )
+    const origin = randomEdgePosition(opts.boardWidth, opts.boardHeight)
+    chars.push({ char, batchOrigin: origin })
   }
-  for (let i = 0; i < fillerCount; i++) {
-    const char = String.fromCharCode(97 + Math.floor(Math.random() * 26))
-    const position = randomEdgePosition(opts.boardWidth, opts.boardHeight)
-    newInvaders.push(
-      createInvader({
-        char,
-        position,
-        center: opts.center,
-        speed: effectiveSpeed,
-        spawnTime: Date.now(),
-      }),
-    )
-  }
+
+  const newInvaders: Invader[] = chars.map(({ char, batchOrigin }) => {
+    const spread = 30
+    const position = {
+      x: batchOrigin.x + (Math.random() - 0.5) * spread,
+      y: batchOrigin.y + (Math.random() - 0.5) * spread,
+    }
+    return createInvader({
+      char,
+      position,
+      center: opts.center,
+      speed: effectiveSpeed,
+      spawnTime: Date.now(),
+    })
+  })
 
   return {
     ...state,

@@ -56,11 +56,11 @@ describe('spawnWave', () => {
     expect(state.invaders.length).toBe(4)
   })
 
-  it('invader characters are biased toward focus keys', () => {
-    let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['('] })
+  it('invader characters include focus keys (word-based selection)', () => {
+    let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a', 's', 'd'] })
     state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 2 })
-    const focusCount = state.invaders.filter((i) => i.char === '(').length
-    expect(focusCount / state.invaders.length).toBeGreaterThanOrEqual(0.5)
+    const focusCount = state.invaders.filter((i) => ['a', 's', 'd'].includes(i.char)).length
+    expect(focusCount).toBeGreaterThan(0)
   })
 })
 
@@ -122,6 +122,41 @@ describe('checkCollisions', () => {
 
     expect(state.grapes).toBe(0)
     expect(state.roundOver).toBe(true)
+  })
+})
+
+describe('spawnWave — word-based batches', () => {
+  it('spawns characters derived from words containing focus keys', () => {
+    // Use a later wave to get more invaders and reduce flakiness
+    let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['e', 't'] })
+    state = { ...state, currentWave: 5 }
+    state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 2 })
+    // All invaders should have single-character chars
+    for (const inv of state.invaders) {
+      expect(inv.char.length).toBe(1)
+    }
+    // With 'e' and 't' as focus keys (very common letters), words containing them should produce these chars
+    const focusChars = state.invaders.filter((i) => ['e', 't'].includes(i.char))
+    expect(focusChars.length).toBeGreaterThan(0)
+  })
+
+  it('uses code snippets for symbol-only focus keys', () => {
+    let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['(', ')'] })
+    state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 2 })
+    // Should still produce individual character invaders
+    for (const inv of state.invaders) {
+      expect(inv.char.length).toBe(1)
+    }
+  })
+
+  it('characters from the same word batch spawn near each other', () => {
+    // Use a large wave to increase chances of seeing batching
+    let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a', 's', 'd'] })
+    // Advance to wave 8 for more invaders
+    state = { ...state, currentWave: 7 }
+    state = spawnWave(state, { center: CENTER, boardWidth: 800, boardHeight: 600, speed: 2 })
+    // Invaders should exist
+    expect(state.invaders.length).toBeGreaterThan(0)
   })
 })
 

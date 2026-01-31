@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { GameBoard } from '../components/GameBoard'
+import type { Explosion } from '../components/GameBoard'
 import { createInvader, createRoundState } from '../lib/game-engine'
 import { createAccuracyRing, recordMiss } from '../lib/accuracy-ring'
 
@@ -80,5 +81,39 @@ describe('GameBoard', () => {
     const ringEl = screen.getByTestId('accuracy-ring')
     // The ring element should exist and indicate a depleted state
     expect(ringEl).toBeInTheDocument()
+  })
+
+  /**
+   * Spec: "pixel-scatter (squares fly outward and fade), 300ms duration, non-blocking"
+   * Verifies that explosion particles render at the correct position when provided.
+   */
+  it('renders explosion particles at destroyed invader position', () => {
+    const state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a'] })
+    const explosions: Explosion[] = [
+      { id: 1, x: 200, y: 300, color: '#4fc3f7', createdAt: Date.now() },
+    ]
+
+    render(<GameBoard roundState={state} explosions={explosions} onKeyPress={vi.fn()} />)
+
+    const explosionEl = screen.getByTestId('explosion-1')
+    expect(explosionEl).toBeInTheDocument()
+    // Should contain 8 particle children
+    expect(explosionEl.querySelectorAll('.explosion-particle')).toHaveLength(8)
+  })
+
+  /**
+   * Multiple simultaneous explosions should all render independently.
+   */
+  it('renders multiple simultaneous explosions', () => {
+    const state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a'] })
+    const explosions: Explosion[] = [
+      { id: 1, x: 100, y: 200, color: '#ff7043', createdAt: Date.now() },
+      { id: 2, x: 400, y: 500, color: '#4fc3f7', createdAt: Date.now() },
+    ]
+
+    render(<GameBoard roundState={state} explosions={explosions} onKeyPress={vi.fn()} />)
+
+    expect(screen.getByTestId('explosion-1')).toBeInTheDocument()
+    expect(screen.getByTestId('explosion-2')).toBeInTheDocument()
   })
 })

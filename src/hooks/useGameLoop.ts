@@ -114,7 +114,7 @@ export function useGameLoop(props: UseGameLoopProps) {
 
   const handleKey = useCallback(
     (key: string) => {
-      const result = handleKeyPress(stateRef.current, key, center)
+      const result = handleKeyPress(stateRef.current, key, center, Date.now())
       stateRef.current = result.state
       propsRef.current.onStateChange(result.state)
       return result

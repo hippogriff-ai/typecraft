@@ -6,8 +6,10 @@ import type { RoundState } from './lib/game-engine'
 import { createAccuracyRing, recordHit, recordMiss } from './lib/accuracy-ring'
 import type { AccuracyRing } from './lib/accuracy-ring'
 import { SPEED_PRESETS } from './lib/settings'
+import { getCharColor } from './lib/sprites'
 import type { Settings } from './lib/settings'
 import { GameBoard } from './components/GameBoard'
+import type { Explosion } from './components/GameBoard'
 import { HUD } from './components/HUD'
 import { MainMenu } from './components/MainMenu'
 import { OnboardingDemo } from './components/OnboardingDemo'
@@ -47,6 +49,8 @@ function App() {
   })
 
   const [accuracyRing, setAccuracyRing] = useState<AccuracyRing>(() => createAccuracyRing())
+  const [explosions, setExplosions] = useState<Explosion[]>([])
+  const explosionIdRef = useRef(0)
 
   const [roundState, setRoundState] = useState<RoundState>(() =>
     createRoundState({
@@ -118,6 +122,16 @@ function App() {
     return () => clearTimeout(timer)
   }, [countdownValue, startNewRound])
 
+  // Cleanup explosions after 300ms
+  useEffect(() => {
+    if (explosions.length === 0) return
+    const timer = setTimeout(() => {
+      const now = Date.now()
+      setExplosions((prev) => prev.filter((e) => now - e.createdAt < 300))
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [explosions])
+
   const handleStateChange = useCallback((state: RoundState) => {
     setRoundState(state)
   }, [])
@@ -167,6 +181,11 @@ function App() {
         const result = gameLoop.handleKeyPress(e.key)
         recordKeyResult(e.key, result.hit, result.reactionTimeMs ?? 0)
         setAccuracyRing((ring) => (result.hit ? recordHit(ring) : recordMiss(ring)))
+        if (result.hit && result.destroyedPosition) {
+          const id = explosionIdRef.current++
+          const color = getCharColor(e.key).primary
+          setExplosions((prev) => [...prev, { id, x: result.destroyedPosition!.x, y: result.destroyedPosition!.y, color, createdAt: Date.now() }])
+        }
       }
     }
     window.addEventListener('keydown', handler)
@@ -242,7 +261,7 @@ function App() {
               onRecalibrate={gameState.recalibrate}
               onOpenSettings={gameState.goToSettings}
             />
-            <GameBoard roundState={roundState} accuracyRing={accuracyRing} boardSize={viewportSize} onKeyPress={gameLoop.handleKeyPress} />
+            <GameBoard roundState={roundState} accuracyRing={accuracyRing} boardSize={viewportSize} explosions={explosions} onKeyPress={gameLoop.handleKeyPress} />
 
             {paused && (
               <PauseMenu

@@ -118,6 +118,31 @@
   box-shadow: inset -2px -2px 4px rgba(0, 0, 0, 0.4), 0 0 3px rgba(107, 47, 160, 0.5);
 }
 
+/* Explosions */
+.explosion {
+  z-index: 50;
+  transform: translate(-50%, -50%);
+}
+
+.explosion-particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  animation: pixel-scatter 300ms ease-out forwards;
+}
+
+@keyframes pixel-scatter {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(0.3);
+  }
+}
+
 /* Invaders */
 .invader {
   display: flex;

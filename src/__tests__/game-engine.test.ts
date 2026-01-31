@@ -273,6 +273,22 @@ describe('handleKeyPress', () => {
     expect(result.state.invaders[0].alive).toBe(true)
   })
 
+  /**
+   * Spec: "pixel-scatter explosion" — need the destroyed invader's position for rendering.
+   */
+  it('returns the destroyed invader position on hit', () => {
+    const inv = createInvader({ char: 'a', position: { x: 350, y: 280 }, center: CENTER, speed: 1 })
+    let state = createRoundState({ grapeCount: 24, totalWaves: 8, focusKeys: ['a'] })
+    state = { ...state, invaders: [inv] }
+
+    const result = handleKeyPress(state, 'a', CENTER)
+
+    expect(result.hit).toBe(true)
+    expect(result.destroyedPosition).toBeDefined()
+    expect(result.destroyedPosition!.x).toBeCloseTo(350, 0)
+    expect(result.destroyedPosition!.y).toBeCloseTo(280, 0)
+  })
+
   it('ignores dead invaders when finding targets', () => {
     const dead = createInvader({ char: 'a', position: { x: 390, y: 300 }, center: CENTER, speed: 1 })
     dead.alive = false

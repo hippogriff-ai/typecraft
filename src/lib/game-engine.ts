@@ -129,9 +129,17 @@ export function spawnWave(
     }
   }
 
-  // Trim or pad to exact count, maintaining focus bias
+  // Trim or pad to exact count, preferring to keep focus characters
   while (chars.length > count) {
-    chars.pop()
+    let removed = false
+    for (let i = chars.length - 1; i >= 0; i--) {
+      if (!state.focusKeys.includes(chars[i].char)) {
+        chars.splice(i, 1)
+        removed = true
+        break
+      }
+    }
+    if (!removed) chars.pop()
   }
   while (chars.length < count) {
     const char = state.focusKeys[Math.floor(Math.random() * state.focusKeys.length)]
@@ -256,7 +264,7 @@ export function handleKeyPress(
   key: string,
   center: Vec2,
   currentTime?: number,
-): { state: RoundState; hit: boolean; reactionTimeMs?: number } {
+): { state: RoundState; hit: boolean; reactionTimeMs?: number; destroyedPosition?: Vec2 } {
   const matchingAlive = state.invaders
     .map((inv, idx) => ({ inv, idx }))
     .filter(({ inv }) => inv.alive && inv.char === key)
@@ -283,6 +291,7 @@ export function handleKeyPress(
     state: { ...state, invaders, score: state.score + 1 },
     hit: true,
     reactionTimeMs,
+    destroyedPosition: { ...nearest.inv.position },
   }
 }
 

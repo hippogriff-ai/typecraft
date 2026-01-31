@@ -2,10 +2,19 @@ import type { RoundState, Vec2 } from '../lib/game-engine'
 import type { AccuracyRing } from '../lib/accuracy-ring'
 import { getCharColor } from '../lib/sprites'
 
+export interface Explosion {
+  id: number
+  x: number
+  y: number
+  color: string
+  createdAt: number
+}
+
 interface GameBoardProps {
   roundState: RoundState
   accuracyRing?: AccuracyRing
   boardSize?: { width: number; height: number }
+  explosions?: Explosion[]
   onKeyPress: (key: string) => void
 }
 
@@ -13,7 +22,10 @@ function distanceToCenter(pos: Vec2, center: Vec2): number {
   return Math.sqrt((pos.x - center.x) ** 2 + (pos.y - center.y) ** 2)
 }
 
-export function GameBoard({ roundState, accuracyRing, boardSize, onKeyPress }: GameBoardProps) {
+// 8 particles per explosion, evenly distributed around a circle
+const PARTICLE_ANGLES = Array.from({ length: 8 }, (_, i) => (i * Math.PI * 2) / 8)
+
+export function GameBoard({ roundState, accuracyRing, boardSize, explosions, onKeyPress }: GameBoardProps) {
   const w = boardSize?.width ?? 800
   const h = boardSize?.height ?? 600
   const center: Vec2 = { x: w / 2, y: h / 2 }
@@ -93,6 +105,27 @@ export function GameBoard({ roundState, accuracyRing, boardSize, onKeyPress }: G
             </div>
           )
         })}
+
+      {explosions?.map((exp) => (
+        <div
+          key={exp.id}
+          data-testid={`explosion-${exp.id}`}
+          className="explosion"
+          style={{ position: 'absolute', left: exp.x, top: exp.y, pointerEvents: 'none' }}
+        >
+          {PARTICLE_ANGLES.map((angle, i) => (
+            <div
+              key={i}
+              className="explosion-particle"
+              style={{
+                '--dx': `${Math.cos(angle) * 40}px`,
+                '--dy': `${Math.sin(angle) * 40}px`,
+                background: exp.color,
+              } as React.CSSProperties}
+            />
+          ))}
+        </div>
+      ))}
 
       <div data-testid="round-info" className="round-info">
         Wave {roundState.currentWave}/{roundState.totalWaves} | Grapes:{' '}

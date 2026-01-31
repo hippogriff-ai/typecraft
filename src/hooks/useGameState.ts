@@ -118,14 +118,24 @@ export function useGameState(): GameState {
     } else if (isFirstLaunch) {
       setScreen('demo')
     } else {
+      const currentRound = calibrationRounds[calibrationRoundIndex]
+      persist({
+        ...appState,
+        currentFocusKeys: currentRound?.focusKeys ?? [],
+      })
       setScreen('playing')
     }
-  }, [appState, isFirstLaunch, persist])
+  }, [appState, isFirstLaunch, persist, calibrationRounds, calibrationRoundIndex])
 
   const completeDemo = useCallback(() => {
-    persist({ ...appState, mode: 'calibration' })
+    const firstRound = calibrationRounds[calibrationRoundIndex]
+    persist({
+      ...appState,
+      mode: 'calibration',
+      currentFocusKeys: firstRound?.focusKeys ?? [],
+    })
     setScreen('playing')
-  }, [appState, persist])
+  }, [appState, persist, calibrationRounds, calibrationRoundIndex])
 
   const completeRound = useCallback(
     (stats: { grapesLeft: number; accuracy: number; avgReactionMs: number }) => {
@@ -147,6 +157,10 @@ export function useGameState(): GameState {
         ]
         const allDone = nextIdx >= calibrationRounds.length
 
+        const nextFocusKeys = allDone
+          ? appState.currentFocusKeys
+          : calibrationRounds[nextIdx]?.focusKeys ?? []
+
         const newState: AppState = {
           ...appState,
           roundHistory: newHistory,
@@ -154,6 +168,7 @@ export function useGameState(): GameState {
             completedGroups,
             complete: allDone,
           },
+          currentFocusKeys: nextFocusKeys,
         }
 
         persist(newState)

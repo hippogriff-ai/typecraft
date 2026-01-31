@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useGameState } from './hooks/useGameState'
 import { useGameLoop } from './hooks/useGameLoop'
 import { createRoundState } from './lib/game-engine'
@@ -96,6 +96,14 @@ function App() {
     boardSize: { width: 800, height: 600 },
     baseSpeed,
   })
+
+  const prevScreenRef = useRef(gameState.screen)
+  useEffect(() => {
+    if (prevScreenRef.current !== 'playing' && gameState.screen === 'playing') {
+      startNewRound()
+    }
+    prevScreenRef.current = gameState.screen
+  }, [gameState.screen, startNewRound])
 
   useEffect(() => {
     if (gameState.screen === 'playing' && !paused && !roundEndResult && !showRoundSummary) {

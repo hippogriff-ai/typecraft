@@ -31,7 +31,7 @@
 | 21 | Visual Polish | TODO | |
 
 ### TODO
-- E2E testing with Playwright
+- ~~E2E testing with Playwright~~ DONE (13 E2E tests, Playwright + Chromium)
 - Visual polish (absorb animation red flash/dissolve, grape burst animation)
 - ~~clearCalibrationData preserves roundHistory/highScore (verify/fix)~~ DONE
 - ~~Explosion animations~~ DONE (pixel-scatter, 8 particles, 300ms CSS animation)

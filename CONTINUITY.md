@@ -48,13 +48,14 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - **Flaky wave test fix**: spawnWave trimming now prefers removing non-focus chars
 - **Lint clean, 164/164 tests pass, build clean**
 - **Playtested in browser**: explosions working, full gameplay flow confirmed
+- **E2E testing**: 13 Playwright tests covering all critical user flows (menu, demo, calibration, gameplay, pause, quit, settings, stats, persistence, HUD)
+- **Vitest exclude e2e/**: vite.config.ts excludes e2e/ from Vitest to avoid Playwright conflicts
 
 ### Now
-- Ready for next iteration
+- Iteration 8: visual polish
 
 ### Next
 - Visual polish (absorb animation, grape burst animation)
-- E2E testing with Playwright
 
 ## Open Questions
 - None

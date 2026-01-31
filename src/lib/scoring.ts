@@ -8,6 +8,8 @@ export interface KeyProfile {
   totalAttempts: number
   correctAttempts: number
   averageTimeMs: number
+  bestAccuracy: number
+  bestSpeedMs: number
   history: KeyPressRecord[]
 }
 
@@ -17,6 +19,8 @@ export function createKeyProfile(key: string): KeyProfile {
     totalAttempts: 0,
     correctAttempts: 0,
     averageTimeMs: 0,
+    bestAccuracy: 0,
+    bestSpeedMs: 0,
     history: [],
   }
 }
@@ -30,11 +34,19 @@ export function recordKeyPress(
   const averageTimeMs =
     (profile.averageTimeMs * profile.totalAttempts + press.timeMs) / totalAttempts
 
+  const accuracy = correctAttempts / totalAttempts
+  const bestAccuracy = Math.max(profile.bestAccuracy, accuracy)
+  const bestSpeedMs = press.correct && press.timeMs > 0
+    ? (profile.bestSpeedMs === 0 ? averageTimeMs : Math.min(profile.bestSpeedMs, averageTimeMs))
+    : profile.bestSpeedMs
+
   return {
     ...profile,
     totalAttempts,
     correctAttempts,
     averageTimeMs,
+    bestAccuracy,
+    bestSpeedMs,
     history: [...profile.history, press],
   }
 }

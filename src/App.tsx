@@ -263,8 +263,8 @@ function App() {
     accuracy: p.totalAttempts > 0 ? p.correctAttempts / p.totalAttempts : 0,
     avgSpeedMs: Math.round(p.averageTimeMs),
     totalKills: p.correctAttempts,
-    bestAccuracy: p.totalAttempts > 0 ? p.correctAttempts / p.totalAttempts : 0,
-    bestSpeedMs: Math.round(p.averageTimeMs),
+    bestAccuracy: p.bestAccuracy ?? (p.totalAttempts > 0 ? p.correctAttempts / p.totalAttempts : 0),
+    bestSpeedMs: Math.round(p.bestSpeedMs || p.averageTimeMs),
     trend: computeTrend(p),
   }))
 

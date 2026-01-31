@@ -31,12 +31,14 @@ describe('KEY_GROUPS', () => {
 })
 
 describe('createKeyProfile', () => {
-  it('creates a profile with zero attempts and no history', () => {
+  it('creates a profile with zero attempts, no history, and initial bests', () => {
     const profile = createKeyProfile('a')
     expect(profile.key).toBe('a')
     expect(profile.totalAttempts).toBe(0)
     expect(profile.correctAttempts).toBe(0)
     expect(profile.averageTimeMs).toBe(0)
+    expect(profile.bestAccuracy).toBe(0)
+    expect(profile.bestSpeedMs).toBe(0)
     expect(profile.history).toEqual([])
   })
 })
@@ -65,6 +67,29 @@ describe('recordKeyPress', () => {
     expect(profile.averageTimeMs).toBe(300)
     expect(profile.totalAttempts).toBe(2)
     expect(profile.correctAttempts).toBe(2)
+  })
+
+  /**
+   * Spec: "For each key, track personal bests: Best accuracy %, Best speed"
+   * bestAccuracy should be the highest accuracy the key profile has ever achieved.
+   * bestSpeedMs should be the fastest average reaction time.
+   */
+  it('tracks personal best accuracy and speed', () => {
+    let profile = createKeyProfile('a')
+    // 1 hit → 100% accuracy, 200ms avg
+    profile = recordKeyPress(profile, { correct: true, timeMs: 200 })
+    expect(profile.bestAccuracy).toBe(1.0)
+    expect(profile.bestSpeedMs).toBe(200)
+
+    // 1 miss → 50% accuracy, avg time changes — but best accuracy stays at 1.0
+    profile = recordKeyPress(profile, { correct: false, timeMs: 500 })
+    expect(profile.bestAccuracy).toBe(1.0)
+
+    // Another hit → 66.7% accuracy, best speed improves
+    profile = recordKeyPress(profile, { correct: true, timeMs: 100 })
+    expect(profile.bestAccuracy).toBe(1.0) // still from first press
+    // avgTimeMs = (200+500+100)/3 = 266.67, but bestSpeedMs was 200 which is better
+    expect(profile.bestSpeedMs).toBeLessThanOrEqual(267)
   })
 
   it('appends to history', () => {

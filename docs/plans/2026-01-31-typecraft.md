@@ -31,10 +31,9 @@
 | 21 | Visual Polish | TODO | |
 
 ### TODO
-- Accuracy ring visual on GameBoard (lib exists, not rendered)
-- Visual polish (pixel-art sprites on invaders, explosion animations)
 - E2E testing with Playwright
-- Responsive board sizing (800x600 hardcoded)
+- Visual polish (pixel-art sprites on invaders, explosion animations, grape burst)
+- clearCalibrationData preserves roundHistory/highScore (verify/fix)
 
 ---
 

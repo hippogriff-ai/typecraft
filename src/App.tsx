@@ -13,6 +13,7 @@ import { MainMenu } from './components/MainMenu'
 import { OnboardingDemo } from './components/OnboardingDemo'
 import { RoundSummary } from './components/RoundSummary'
 import { RoundEnd } from './components/RoundEnd'
+import { Countdown } from './components/Countdown'
 import { PauseMenu } from './components/PauseMenu'
 import { SettingsScreen } from './components/SettingsScreen'
 import { StatsScreen } from './components/StatsScreen'
@@ -24,6 +25,7 @@ function App() {
   const [paused, setPaused] = useState(false)
   const [roundEndResult, setRoundEndResult] = useState<'cleared' | 'grapes_lost' | null>(null)
   const [showRoundSummary, setShowRoundSummary] = useState(false)
+  const [countdownValue, setCountdownValue] = useState<number | null>(null)
   const [lastRoundStats, setLastRoundStats] = useState({
     grapesLeft: 0,
     accuracy: 0,
@@ -86,8 +88,22 @@ function App() {
       roundScore: lastRoundStats.roundScore,
     })
     setShowRoundSummary(false)
-    startNewRound()
-  }, [gameState, lastRoundStats, startNewRound])
+    setCountdownValue(3)
+  }, [gameState, lastRoundStats])
+
+  const countdownRef = useRef<number>(0)
+  useEffect(() => {
+    if (countdownValue === null) return
+    if (countdownValue <= 0) {
+      countdownRef.current = window.setTimeout(() => {
+        setCountdownValue(null)
+        startNewRound()
+      }, 0)
+      return () => clearTimeout(countdownRef.current)
+    }
+    const timer = setTimeout(() => setCountdownValue((v) => (v !== null ? v - 1 : null)), 1000)
+    return () => clearTimeout(timer)
+  }, [countdownValue, startNewRound])
 
   const handleStateChange = useCallback((state: RoundState) => {
     setRoundState(state)
@@ -112,12 +128,12 @@ function App() {
   }, [gameState.screen, startNewRound])
 
   useEffect(() => {
-    if (gameState.screen === 'playing' && !paused && !roundEndResult && !showRoundSummary) {
+    if (gameState.screen === 'playing' && !paused && !roundEndResult && !showRoundSummary && countdownValue === null) {
       if (!gameLoop.running) {
         gameLoop.start()
       }
     }
-  }, [gameState.screen, paused, roundEndResult, showRoundSummary, gameLoop])
+  }, [gameState.screen, paused, roundEndResult, showRoundSummary, countdownValue, gameLoop])
 
   const { screen, recordKeyResult } = gameState
   useEffect(() => {
@@ -134,7 +150,7 @@ function App() {
         return
       }
 
-      if (!paused && !roundEndResult && !showRoundSummary) {
+      if (!paused && !roundEndResult && !showRoundSummary && countdownValue === null) {
         const result = gameLoop.handleKeyPress(e.key)
         recordKeyResult(e.key, result.hit, result.reactionTimeMs ?? 0)
         setAccuracyRing((ring) => (result.hit ? recordHit(ring) : recordMiss(ring)))
@@ -142,7 +158,7 @@ function App() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [screen, recordKeyResult, paused, roundEndResult, showRoundSummary, gameLoop])
+  }, [screen, recordKeyResult, paused, roundEndResult, showRoundSummary, countdownValue, gameLoop])
 
   const roundName =
     gameState.mode === 'calibration'
@@ -239,6 +255,10 @@ function App() {
 
             {roundEndResult && (
               <RoundEnd result={roundEndResult} onDone={handleRoundEndDone} />
+            )}
+
+            {countdownValue !== null && (
+              <Countdown value={countdownValue} />
             )}
 
             {showRoundSummary && (

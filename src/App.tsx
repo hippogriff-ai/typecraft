@@ -226,6 +226,7 @@ function App() {
     onCollisions: handleCollisions,
     boardSize: viewportSize,
     baseSpeed,
+    calibrationMode: gameState.mode === 'calibration',
   })
 
   const prevScreenRef = useRef(gameState.screen)

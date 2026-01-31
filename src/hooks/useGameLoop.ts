@@ -8,6 +8,8 @@ import {
   checkRoundComplete,
   releasePendingSpawns,
 } from '../lib/game-engine'
+import { createCalibrationTracker, recordCalibrationResult, getAdaptedSpeed } from '../lib/adaptive-calibration'
+import type { CalibrationTracker } from '../lib/adaptive-calibration'
 
 export interface UseGameLoopProps {
   roundState: RoundState
@@ -16,6 +18,7 @@ export interface UseGameLoopProps {
   onCollisions?: (events: CollisionEvent[]) => void
   boardSize: { width: number; height: number }
   baseSpeed?: number
+  calibrationMode?: boolean
 }
 
 export function useGameLoop(props: UseGameLoopProps) {
@@ -25,6 +28,7 @@ export function useGameLoop(props: UseGameLoopProps) {
   const lastTimeRef = useRef<number>(0)
   const propsRef = useRef(props)
   const tickRef = useRef<((timestamp: number) => void) | undefined>(undefined)
+  const calibrationTrackerRef = useRef<CalibrationTracker>(createCalibrationTracker(props.baseSpeed ?? 50))
 
   useEffect(() => {
     propsRef.current = props
@@ -79,11 +83,14 @@ export function useGameLoop(props: UseGameLoopProps) {
       const allResolved = state.invaders.every((inv) => !inv.alive) && state.pendingSpawns.length === 0
       if (allResolved && state.currentWave < state.totalWaves) {
         state = { ...state, invaders: [] }
+        const effectiveBaseSpeed = propsRef.current.calibrationMode
+          ? getAdaptedSpeed(calibrationTrackerRef.current)
+          : baseSpeed
         state = spawnWave(state, {
           center,
           boardWidth: boardSize.width,
           boardHeight: boardSize.height,
-          speed: baseSpeed,
+          speed: effectiveBaseSpeed,
         })
       }
 
@@ -96,6 +103,7 @@ export function useGameLoop(props: UseGameLoopProps) {
   const start = useCallback(() => {
     setRunning(true)
     lastTimeRef.current = 0
+    calibrationTrackerRef.current = createCalibrationTracker(propsRef.current.baseSpeed ?? 50)
 
     let state = stateRef.current
     if (state.currentWave === 0) {
@@ -122,6 +130,15 @@ export function useGameLoop(props: UseGameLoopProps) {
       const result = handleKeyPress(stateRef.current, key, center, Date.now())
       stateRef.current = result.state
       propsRef.current.onStateChange(result.state)
+
+      // Record result in calibration tracker when in calibration mode
+      if (propsRef.current.calibrationMode) {
+        calibrationTrackerRef.current = recordCalibrationResult(
+          calibrationTrackerRef.current,
+          { correct: result.hit },
+        )
+      }
+
       return result
     },
     [center],

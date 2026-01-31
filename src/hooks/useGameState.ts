@@ -151,6 +151,7 @@ export function useGameState(): GameState {
           wpm: stats.wpm,
           grapesLeft: stats.grapesLeft,
           focusKeys: appState.currentFocusKeys,
+          score: stats.roundScore,
         },
       ]
 

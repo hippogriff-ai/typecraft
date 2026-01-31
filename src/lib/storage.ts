@@ -10,6 +10,7 @@ export interface RoundHistoryEntry {
   wpm: number
   grapesLeft: number
   focusKeys: string[]
+  score?: number
 }
 
 export interface CalibrationProgress {

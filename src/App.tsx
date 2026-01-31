@@ -3,6 +3,8 @@ import { useGameState } from './hooks/useGameState'
 import { useGameLoop } from './hooks/useGameLoop'
 import { createRoundState } from './lib/game-engine'
 import type { RoundState } from './lib/game-engine'
+import { createAccuracyRing, recordHit, recordMiss } from './lib/accuracy-ring'
+import type { AccuracyRing } from './lib/accuracy-ring'
 import { SPEED_PRESETS } from './lib/settings'
 import type { Settings } from './lib/settings'
 import { GameBoard } from './components/GameBoard'
@@ -29,6 +31,8 @@ function App() {
     roundScore: 0,
   })
 
+  const [accuracyRing, setAccuracyRing] = useState<AccuracyRing>(() => createAccuracyRing())
+
   const [roundState, setRoundState] = useState<RoundState>(() =>
     createRoundState({
       grapeCount: settings.grapeCount ?? 24,
@@ -48,6 +52,7 @@ function App() {
     )
     setRoundEndResult(null)
     setShowRoundSummary(false)
+    setAccuracyRing(createAccuracyRing())
   }, [gameState.focusKeys, settings])
 
   const handleRoundEnd = useCallback(
@@ -132,6 +137,7 @@ function App() {
       if (!paused && !roundEndResult && !showRoundSummary) {
         const result = gameLoop.handleKeyPress(e.key)
         recordKeyResult(e.key, result.hit, result.reactionTimeMs ?? 0)
+        setAccuracyRing((ring) => (result.hit ? recordHit(ring) : recordMiss(ring)))
       }
     }
     window.addEventListener('keydown', handler)
@@ -207,7 +213,7 @@ function App() {
               onRecalibrate={gameState.recalibrate}
               onOpenSettings={gameState.goToSettings}
             />
-            <GameBoard roundState={roundState} onKeyPress={gameLoop.handleKeyPress} />
+            <GameBoard roundState={roundState} accuracyRing={accuracyRing} onKeyPress={gameLoop.handleKeyPress} />
 
             {paused && (
               <PauseMenu

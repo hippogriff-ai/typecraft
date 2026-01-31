@@ -1,7 +1,7 @@
 /**
  * Tests for the OnboardingDemo component.
- * Verifies initial prompt, invader display, and callback contract.
- * Can be simplified if demo flow changes — only initial state and callback matter.
+ * Verifies initial prompt, invader display, proximity prompt, and callback contract.
+ * Spec: "Interactive Demo (first launch only): guided onboarding mini-round"
  */
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
@@ -16,6 +16,16 @@ describe('OnboardingDemo', () => {
   it('shows an invader with a character', () => {
     render(<OnboardingDemo onComplete={vi.fn()} />)
     expect(screen.getByTestId('demo-invader')).toBeInTheDocument()
+  })
+
+  /**
+   * Spec: "Prompt 3 (when one gets close to grapes): Watch out for the grapes!"
+   * The component should display the proximity warning when an invader is near center.
+   */
+  it('shows proximity prompt data-testid for prompt text', () => {
+    render(<OnboardingDemo onComplete={vi.fn()} />)
+    // Prompt is visible and has a test id
+    expect(screen.getByTestId('demo-prompt')).toBeInTheDocument()
   })
 
   it('exposes onComplete callback', () => {

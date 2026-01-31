@@ -24,21 +24,21 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - **All 11 lib modules implemented**: keys, scoring, game-engine, wave-generator, stats, storage, settings, adaptive-calibration, accuracy-ring, sprites, word-list
 - **Both hooks implemented**: useGameState, useGameLoop
 - **All 10 components implemented**: HUD, GameBoard, RoundSummary, MainMenu, RoundEnd, Countdown, SettingsScreen, StatsScreen, OnboardingDemo, PauseMenu
-- **App.tsx wired up** (game board + HUD on launch per current test expectations)
-- **140/140 tests pass across 22 test files, build passes clean**
-- Tests added for: settings, adaptive-calibration, accuracy-ring, sprites, word-list, MainMenu, SettingsScreen, StatsScreen, OnboardingDemo, PauseMenu, RoundEnd, Countdown
+- **App.tsx fully wired** — menu → demo → calibration-summary → playing (with pause, round-end, round-summary)
+- **App.test.tsx** — 7 tests for screen navigation (menu, dark theme, demo on first launch, returning player, stats, settings)
+- **Dark theme CSS** — App.css and index.css fully styled
+- **141/141 tests pass across 22 test files, build passes clean**
 
 ### Now
-- Wire App.tsx with full screen navigation (menu → demo → calibration → practice)
-- Update App.test.tsx to match new navigation flow
+- Iteration 3: Pick next most important task and implement
 
 ### Next
-- CSS styling and visual polish (dark theme, invader sprites, grape cluster, animations)
+- Wire updateSettings in SettingsScreen (currently noop)
+- Visual polish (pixel-art sprites on invaders, animations)
 - E2E testing with Playwright
 
 ## Open Questions
 - None
 
 ## Working Set
-- src/App.tsx — needs full navigation wiring
-- src/__tests__/App.test.tsx — needs updating for menu-first flow
+- docs/plans/2026-01-31-typecraft.md — completion tracker

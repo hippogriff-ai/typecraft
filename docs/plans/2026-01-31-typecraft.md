@@ -27,15 +27,12 @@
 | 17 | Stats Screen | DONE | src/components/StatsScreen.tsx |
 | 18 | Onboarding Demo | DONE | src/components/OnboardingDemo.tsx |
 | 19 | Pause Menu | DONE | src/components/PauseMenu.tsx |
-| 20 | App Shell Integration | PARTIAL | src/App.tsx (game board only, no menu navigation yet) |
+| 20 | App Shell Integration | DONE | src/App.tsx, src/App.css, src/index.css, src/__tests__/App.test.tsx |
 | 21 | Visual Polish | TODO | |
 
 ### TODO
-- Add tests for new modules: settings, adaptive-calibration, accuracy-ring, sprites, word-list
-- Add tests for new components: MainMenu, SettingsScreen, StatsScreen, OnboardingDemo, PauseMenu, RoundEnd, Countdown
-- Wire App.tsx with full screen navigation (menu → demo → calibration → practice)
-- Add word-list.ts module
-- CSS styling and visual polish
+- Visual polish (pixel-art sprites on invaders, animations)
+- Wire updateSettings in SettingsScreen
 - E2E testing
 
 ---

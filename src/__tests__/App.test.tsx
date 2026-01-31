@@ -1,30 +1,22 @@
+/**
+ * Tests for the App shell integration.
+ * Verifies screen navigation: menu on launch, demo for first-time, direct play for returning player,
+ * dark theme, and stats/settings navigation. Can be simplified if screen flow changes.
+ */
 import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import App from '../App'
 
 beforeEach(() => {
   localStorage.clear()
 })
 
-describe('App', () => {
-  it('shows game board on launch', () => {
+describe('App — first launch', () => {
+  it('shows main menu on launch', () => {
     render(<App />)
-    expect(screen.getByTestId('game-board')).toBeInTheDocument()
-  })
-
-  it('shows HUD with stats', () => {
-    render(<App />)
-    expect(screen.getByTestId('hud')).toBeInTheDocument()
-  })
-
-  it('starts in calibration mode on first launch', () => {
-    render(<App />)
-    expect(screen.getByTestId('round-name')).toBeDefined()
-  })
-
-  it('shows recalibrate button', () => {
-    render(<App />)
-    expect(screen.getByRole('button', { name: /recalibrate/i })).toBeInTheDocument()
+    expect(screen.getByText(/typecraft/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /start game/i })).toBeInTheDocument()
   })
 
   it('has dark theme styling', () => {
@@ -33,23 +25,76 @@ describe('App', () => {
     expect(app).toHaveClass('dark')
   })
 
-  it('resumes practice mode from localStorage', () => {
+  it('transitions to demo when Start Game is clicked (first time)', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: /start game/i }))
+    expect(screen.getByText(/type the character/i)).toBeInTheDocument()
+  })
+})
+
+describe('App — returning player', () => {
+  it('shows main menu with saved state', () => {
     localStorage.setItem(
       'typecraft',
       JSON.stringify({
-        keyProfiles: {
-          a: { key: 'a', totalAttempts: 5, correctAttempts: 5, averageTimeMs: 200, history: [] },
-        },
-        roundHistory: [{ timestamp: Date.now(), wpm: 30, grapesLeft: 8, focusKeys: ['a'] }],
+        schemaVersion: 1,
+        keyProfiles: {},
+        roundHistory: [],
         calibrationProgress: {
           completedGroups: ['homeRow', 'topRow', 'bottomRow', 'numbers', 'pythonSymbols'],
           complete: true,
         },
         currentFocusKeys: ['(', ')'],
         mode: 'practice',
+        settings: { grapeCount: 24, speedPreset: 'normal', maxInvadersPerWave: 12, wavesPerRound: 8 },
+        highScore: 47,
       }),
     )
     render(<App />)
+    expect(screen.getByRole('button', { name: /start game/i })).toBeInTheDocument()
+  })
+
+  it('goes directly to playing on Start Game (no demo, no calibration)', async () => {
+    localStorage.setItem(
+      'typecraft',
+      JSON.stringify({
+        schemaVersion: 1,
+        keyProfiles: {},
+        roundHistory: [],
+        calibrationProgress: {
+          completedGroups: ['homeRow', 'topRow', 'bottomRow', 'numbers', 'pythonSymbols'],
+          complete: true,
+        },
+        currentFocusKeys: ['(', ')'],
+        mode: 'practice',
+        settings: { grapeCount: 24, speedPreset: 'normal', maxInvadersPerWave: 12, wavesPerRound: 8 },
+        highScore: 47,
+      }),
+    )
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: /start game/i }))
     expect(screen.getByTestId('game-board')).toBeInTheDocument()
+  })
+})
+
+describe('App — navigation', () => {
+  it('can navigate to stats and back', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: /stats/i }))
+    expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /back/i }))
+    expect(screen.getByRole('button', { name: /start game/i })).toBeInTheDocument()
+  })
+
+  it('can navigate to settings and back', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: /settings/i }))
+    expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /back/i }))
+    expect(screen.getByRole('button', { name: /start game/i })).toBeInTheDocument()
   })
 })

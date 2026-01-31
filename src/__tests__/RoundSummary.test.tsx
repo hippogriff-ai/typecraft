@@ -39,6 +39,22 @@ describe('RoundSummary', () => {
     expect(next).toHaveTextContent('}')
   })
 
+  /**
+   * Spec: "Round Outcome > Keys improved / Keys declined"
+   * keysImproved shows keys that got better, keysDefined minus keysImproved = declined
+   */
+  it('shows keys improved and keys declined', () => {
+    render(
+      <RoundSummary
+        {...defaultProps}
+        keysImproved={['(']}
+        keysDefined={['(', ')']}
+      />,
+    )
+    expect(screen.getByTestId('keys-improved')).toHaveTextContent('(')
+    expect(screen.getByTestId('keys-declined')).toHaveTextContent(')')
+  })
+
   it('has a next round button that calls onNextRound', async () => {
     const onNext = vi.fn()
     const user = userEvent.setup()

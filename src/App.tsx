@@ -49,6 +49,8 @@ function App() {
     avgReactionMs: 0,
     roundScore: 0,
     wpm: 0,
+    keysImproved: [] as string[],
+    keysDefined: [] as string[],
   })
 
   const [accuracyRing, setAccuracyRing] = useState<AccuracyRing>(() => createAccuracyRing())
@@ -62,6 +64,7 @@ function App() {
   // Round metrics tracking
   const roundStartTimeRef = useRef(0)
   const reactionTimesRef = useRef<number[]>([])
+  const roundStartAccuracyRef = useRef<Record<string, number>>({})
 
   const [roundState, setRoundState] = useState<RoundState>(() =>
     createRoundState({
@@ -85,7 +88,14 @@ function App() {
     setAccuracyRing(createAccuracyRing())
     roundStartTimeRef.current = Date.now()
     reactionTimesRef.current = []
-  }, [gameState.focusKeys, settings])
+    // Snapshot accuracy for each focus key at round start
+    const snapshot: Record<string, number> = {}
+    for (const k of focusKeys) {
+      const p = gameState.keyProfiles[k]
+      snapshot[k] = p && p.totalAttempts > 0 ? p.correctAttempts / p.totalAttempts : 0
+    }
+    roundStartAccuracyRef.current = snapshot
+  }, [gameState.focusKeys, gameState.keyProfiles, settings])
 
   const handleCollisions = useCallback((events: import('./lib/game-engine').CollisionEvent[]) => {
     const now = Date.now()
@@ -113,17 +123,33 @@ function App() {
         ? Math.round(reactions.reduce((s, t) => s + t, 0) / reactions.length)
         : 0
 
+      // Compute keys improved/declined by comparing current accuracy to round-start snapshot
+      const snapshot = roundStartAccuracyRef.current
+      const keysDefined: string[] = []
+      const keysImproved: string[] = []
+      for (const k of Object.keys(snapshot)) {
+        const p = gameState.keyProfiles[k]
+        if (!p || p.totalAttempts === 0) continue
+        keysDefined.push(k)
+        const currentAcc = p.correctAttempts / p.totalAttempts
+        if (currentAcc > snapshot[k]) {
+          keysImproved.push(k)
+        }
+      }
+
       setLastRoundStats({
         grapesLeft: state.grapes,
         accuracy,
         avgReactionMs,
         roundScore: kills,
         wpm,
+        keysImproved,
+        keysDefined,
       })
 
       setRoundEndResult(state.roundResult ?? 'cleared')
     },
-    [],
+    [gameState.keyProfiles],
   )
 
   const handleRoundEndDone = useCallback(() => {
@@ -365,6 +391,8 @@ function App() {
                 isNewHighScore={lastRoundStats.roundScore > gameState.highScore}
                 focusKeys={gameState.focusKeys}
                 nextFocusKeys={gameState.weakKeys.slice(0, 5)}
+                keysImproved={lastRoundStats.keysImproved}
+                keysDefined={lastRoundStats.keysDefined}
                 onNextRound={handleNextRound}
               />
             )}

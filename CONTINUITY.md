@@ -20,6 +20,7 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - Dead invaders pruned between waves; totalSpawned counter for accurate accuracy
 - Invaders colored by char type (letters=blue/green, symbols=red/orange, numbers=purple)
 - Explosion system: Explosion[] state in App.tsx, passed to GameBoard, 8 CSS-animated particles per explosion, 300ms duration
+- bestSpeedMs uses 0 sentinel (not Infinity) to survive JSON serialization
 
 ## State
 ### Done
@@ -46,23 +47,25 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - **Destroy animation**: pixel-scatter explosion (8 particles, CSS animation, 300ms, non-blocking)
 - **handleKeyPress returns destroyedPosition**: for rendering explosions at correct location
 - **Flaky wave test fix**: spawnWave trimming now prefers removing non-focus chars
-- **Lint clean, 164/164 tests pass, build clean**
 - **Playtested in browser**: explosions working, full gameplay flow confirmed
-- **E2E testing**: 13 Playwright tests covering all critical user flows (menu, demo, calibration, gameplay, pause, quit, settings, stats, persistence, HUD)
+- **E2E testing**: 13 Playwright tests covering all critical user flows
 - **Vitest exclude e2e/**: vite.config.ts excludes e2e/ from Vitest to avoid Playwright conflicts
 - **Absorb animation**: red flash + dissolve inward at collision point (400ms CSS animation)
 - **Grape burst animation**: 6 juice droplet particles spray outward when grape lost (500ms CSS animation)
 - **checkCollisions returns CollisionEvent[]**: position + grapeLost flag for animation triggers
 - **Bug fixes (iteration 9)**: WPM with accuracy multiplier, real WPM tracking in rounds, learning speed 5-round window, wave formula 3+N (N=0), reaction time accumulation, miss doesn't record 0ms
-- **Trend calculation (iteration 10)**: computeTrend() using linear regression on last 10 data points per key, displayed as improving/declining/stable arrows in Stats screen
+- **Trend calculation (iteration 10)**: computeTrend() using linear regression on last 10 data points per key
 - **Removed duplicate round info**: GameBoard no longer renders wave/grape info (already in HUD)
-- **171 unit tests, 13 E2E tests, build clean, lint clean**
+- **Per-key bests (iteration 11)**: bestAccuracy and bestSpeedMs tracked in KeyProfile, used in StatsScreen
+- **Keys improved/declined (iteration 12)**: round-start accuracy snapshot compared to round-end, passed to RoundSummary
+- **Stats screen color-coding (iteration 13)**: rows tinted red-to-green based on accuracy weakness
+- **174 unit tests, 13 E2E tests, build clean, lint clean**
 
 ### Now
-- Ready for next iteration
+- Continuing Ralph Loop iterations
 
 ### Next
-- Remaining code review items (per-key bests, onboarding demo prompts)
+- Onboarding demo overhaul (proximity prompt, actual invader movement)
 - Additional gameplay tuning
 
 ## Open Questions

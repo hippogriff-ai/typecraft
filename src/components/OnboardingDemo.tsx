@@ -160,6 +160,10 @@ export function OnboardingDemo({ onComplete, boardSize }: OnboardingDemoProps) {
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && allDone) {
+        onComplete()
+        return
+      }
       if (allDone) return
       if (e.key.length !== 1) return
       const key = e.key.toLowerCase()
@@ -186,7 +190,7 @@ export function OnboardingDemo({ onComplete, boardSize }: OnboardingDemoProps) {
         setDestroyed((d) => d + 1)
       }
     },
-    [invaders, allDone],
+    [invaders, allDone, onComplete],
   )
 
   useEffect(() => {

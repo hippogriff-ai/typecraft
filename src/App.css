@@ -12,6 +12,22 @@
   color: #e0e0e0;
 }
 
+.github-link {
+  position: fixed;
+  bottom: 8px;
+  right: 8px;
+  color: #666;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  z-index: 1000;
+  line-height: 0;
+}
+
+.github-link:hover {
+  opacity: 1;
+  color: #e0e0e0;
+}
+
 /* Main Menu */
 .main-menu {
   display: flex;

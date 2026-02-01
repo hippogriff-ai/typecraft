@@ -21,10 +21,11 @@ describe('DEFAULT_SETTINGS', () => {
 })
 
 describe('SPEED_PRESETS', () => {
-  it('maps slow to 30, normal to 50, fast to 80 px/s', () => {
+  it('maps slow to 30, normal to 50, fast to 80, ultra to 120 px/s', () => {
     expect(SPEED_PRESETS.slow).toBe(30)
     expect(SPEED_PRESETS.normal).toBe(50)
     expect(SPEED_PRESETS.fast).toBe(80)
+    expect(SPEED_PRESETS.ultra).toBe(120)
   })
 })
 
@@ -35,9 +36,9 @@ describe('validateSettings', () => {
     expect(validateSettings({ ...DEFAULT_SETTINGS, grapeCount: 24 }).grapeCount).toBe(24)
   })
 
-  it('clamps max invaders per wave to 6-20', () => {
+  it('clamps max invaders per wave to 6-30', () => {
     expect(validateSettings({ ...DEFAULT_SETTINGS, maxInvadersPerWave: 1 }).maxInvadersPerWave).toBe(6)
-    expect(validateSettings({ ...DEFAULT_SETTINGS, maxInvadersPerWave: 50 }).maxInvadersPerWave).toBe(20)
+    expect(validateSettings({ ...DEFAULT_SETTINGS, maxInvadersPerWave: 50 }).maxInvadersPerWave).toBe(30)
   })
 
   it('clamps waves per round to 4-12', () => {
@@ -58,5 +59,10 @@ describe('validateSettings', () => {
   it('passes through valid values unchanged', () => {
     const valid: Settings = { grapeCount: 30, speedPreset: 'fast', maxInvadersPerWave: 15, wavesPerRound: 10, colorBlindMode: 'deuteranopia' }
     expect(validateSettings(valid)).toEqual(valid)
+  })
+
+  it('accepts ultra speed preset as valid', () => {
+    const s = { ...DEFAULT_SETTINGS, speedPreset: 'ultra' as Settings['speedPreset'] }
+    expect(validateSettings(s).speedPreset).toBe('ultra')
   })
 })

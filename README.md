@@ -2,6 +2,8 @@
 
 A Space Invaders-style typing game where pixel-art invaders approach a grape cluster and you destroy them by typing the matching key. The game identifies your weak keys and drills them with adaptive practice rounds.
 
+**[Play it live at typecraft.hippogriff.io](https://typecraft.hippogriff.io)**
+
 ![Gameplay](docs/screenshots/gameplay.png)
 
 ## How It Works

@@ -46,6 +46,12 @@ export function SettingsScreen({ settings, onUpdate, onBack }: SettingsScreenPro
           >
             Fast
           </button>
+          <button
+            onClick={() => onUpdate({ ...settings, speedPreset: 'ultra' })}
+            aria-pressed={settings.speedPreset === 'ultra'}
+          >
+            Ultra
+          </button>
         </div>
       </div>
 
@@ -54,7 +60,7 @@ export function SettingsScreen({ settings, onUpdate, onBack }: SettingsScreenPro
         <input
           type="range"
           min={6}
-          max={20}
+          max={30}
           value={settings.maxInvadersPerWave}
           aria-label={`Max Invaders per Wave: ${settings.maxInvadersPerWave}`}
           onChange={(e) =>

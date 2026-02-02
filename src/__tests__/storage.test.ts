@@ -125,7 +125,7 @@ describe('loadState — settings validation', () => {
 
     const loaded = loadState()
     expect(loaded!.settings!.grapeCount).toBe(48)
-    expect(loaded!.settings!.maxInvadersPerWave).toBe(20)
+    expect(loaded!.settings!.maxInvadersPerWave).toBe(30)
     expect(loaded!.settings!.wavesPerRound).toBe(12)
   })
 

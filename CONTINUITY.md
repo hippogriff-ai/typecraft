@@ -187,10 +187,14 @@ Build a Space Invaders-style typing game (TypeCraft) with React 19 + TypeScript 
 - **Links (iteration 132)**: Added "Play it live" link (typecraft.hippogriff.io) to README. Added small GitHub icon (inline SVG) fixed to bottom-right corner of game UI, linking to repo. Subtle at 50% opacity, brightens on hover.
 - **Amplitude analytics (iteration 130)**: Added `@amplitude/analytics-browser` for product analytics. Pure wrapper module `src/lib/analytics.ts` (initAnalytics, trackEvent, setUserProperty) — silent no-ops when `VITE_AMPLITUDE_API_KEY` env var is missing. 12 events tracked: screen_viewed, game_started, demo_completed, calibration_completed, practice_started, round_ended, round_completed, round_abandoned, round_quit, settings_changed, recalibration_triggered, plus auto session_start/end. Events wired at state transition boundaries in App.tsx and useGameState.ts. 7 unit tests. `.env.example` committed, `.env` gitignored.
 
+- **Mobile alert (iteration 133)**: Added mobile device detection overlay on page load — warns user that TypeCraft is designed for physical keyboard practice, with option to dismiss and play anyway. Hidden `<input>` element activates mobile on-screen keyboard after dismissal, auto-refocuses during gameplay to keep keyboard visible. CSS overlay with z-index 9999.
+- **Pre-existing test fix**: storage.test.ts expected maxInvadersPerWave clamp at 20, but iteration 131 raised it to 30. Updated test expectation.
+- **MIT License**: Added LICENSE file to repo root.
+
 ### Now
 - Game is feature-complete per spec, all major bugs fixed, thoroughly tested
 - Analytics integrated for funnel/engagement tracking
-- 302 unit tests across 25 test files, 20 E2E tests — all passing
+- 303 unit tests across 25 test files, 20 E2E tests — all passing
 - Build clean, lint clean, TypeScript strict mode passing
 
 ### Next

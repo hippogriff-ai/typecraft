@@ -36,13 +36,37 @@ function useViewportSize() {
   return size
 }
 
+function isMobileDevice(): boolean {
+  return (
+    ('ontouchstart' in window || navigator.maxTouchPoints > 0) &&
+    /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  )
+}
+
 function App() {
   const gameState = useGameState()
   const settings = gameState.settings
   const viewportSize = useViewportSize()
 
+  const [showMobileAlert, setShowMobileAlert] = useState(() => isMobileDevice())
+  const mobileInputRef = useRef<HTMLInputElement>(null)
+
   // Initialize analytics once on mount
   useEffect(() => { initAnalytics() }, [])
+
+  // On mobile, keep the hidden input focused so the on-screen keyboard stays up during gameplay
+  useEffect(() => {
+    if (!showMobileAlert && isMobileDevice() && mobileInputRef.current) {
+      mobileInputRef.current.focus()
+      const refocus = () => {
+        if (gameState.screen === 'playing') {
+          mobileInputRef.current?.focus()
+        }
+      }
+      mobileInputRef.current.addEventListener('blur', refocus)
+      return () => mobileInputRef.current?.removeEventListener('blur', refocus)
+    }
+  }, [showMobileAlert, gameState.screen])
 
   // Track screen views
   useEffect(() => { trackEvent('screen_viewed', { screen: gameState.screen }) }, [gameState.screen])
@@ -571,6 +595,30 @@ function App() {
 
   return (
     <div data-testid="app" className="dark app">
+      {showMobileAlert && (
+        <div className="mobile-alert-overlay" data-testid="mobile-alert">
+          <div className="mobile-alert">
+            <h2>Desktop Recommended</h2>
+            <p>TypeCraft is designed for physical keyboard practice. For the best experience, play on a device with a hardware keyboard.</p>
+            <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>You can still play with your on-screen keyboard.</p>
+            <button onClick={() => {
+              setShowMobileAlert(false)
+              setTimeout(() => mobileInputRef.current?.focus(), 100)
+            }}>Got it, let me play</button>
+          </div>
+        </div>
+      )}
+      {/* Hidden input to activate mobile on-screen keyboard */}
+      <input
+        ref={mobileInputRef}
+        className="mobile-keyboard-input"
+        aria-hidden="true"
+        autoCapitalize="off"
+        autoCorrect="off"
+        autoComplete="off"
+        inputMode="text"
+        tabIndex={-1}
+      />
       {renderScreen()}
       <a
         href="https://github.com/hippogriff-ai/typecraft"
